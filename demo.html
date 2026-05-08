@@ -27,13 +27,13 @@
     <style>
         :root {
             --bg-color: #17a2b8;
-            --text-main: #ffffff;
-            --text-muted: #cffafe;
-            --primary: #22d3ee;
-            --primary-hover: #b8c01a;
-            --secondary: #67e8f9;
-            --card-bg: rgba(255, 255, 255, 0.15);
-            --card-border: rgba(255, 255, 255, 0.3);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --secondary: #ec4899;
+            --card-bg: rgba(30, 41, 59, 0.8);
+            --card-border: rgba(255, 255, 255, 0.1);
             --success: #10b981;
         }
 
@@ -435,7 +435,6 @@
             cursor: pointer;
         }
 
-        .hover-sentence:hover,
         .hover-sentence.highlight {
             background-color: rgba(234, 179, 8, 0.3);
             color: #ffffff;
@@ -449,6 +448,36 @@
             padding: 20px;
             margin-bottom: 15px;
             animation: fadeIn 0.5s ease forwards;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .bilingual-box.marked {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+
+        .mark-web-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            border: 1px solid var(--card-border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .mark-web-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .mark-web-btn.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border-color: #10b981;
         }
 
         .source-text {
@@ -627,13 +656,12 @@
                 <div class="progress-header">
                     <span id="status-text" style="font-weight: 500; color: var(--primary);">Đang xử lý...</span>
                     <div>
-                        <span id="progress-text"
-                            style="color: var(--text-muted); font-size: 0.9rem; margin-right: 10px;">0%</span>
-                        <button onclick="toggleFullscreen()" id="fullscreen-btn"
-                            style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; transition: color 0.2s;"
-                            title="Mở rộng toàn màn hình">
-                            <i class="fa-solid fa-expand" onmouseover="this.style.color='var(--primary)'"
-                                onmouseout="this.style.color='var(--text-muted)'"></i>
+                        <span id="progress-text" style="color: var(--text-muted); font-size: 0.9rem; margin-right: 10px;">0%</span>
+                        <button onclick="toggleHighlight()" id="highlight-btn" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 1.1rem; transition: color 0.2s; margin-right: 10px;" title="Tắt tính năng highlight câu">
+                            <i class="fa-solid fa-lightbulb" onmouseover="this.style.color='var(--primary-hover)'" onmouseout="this.style.color=''"></i>
+                        </button>
+                        <button onclick="toggleFullscreen()" id="fullscreen-btn" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; transition: color 0.2s;" title="Mở rộng toàn màn hình">
+                            <i class="fa-solid fa-expand" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'"></i>
                         </button>
                     </div>
                 </div>
@@ -644,13 +672,10 @@
                 <div class="bilingual-output" id="bilingual-output"></div>
 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button class="btn-outline warning" id="pause-btn" onclick="togglePause()"
-                        style="flex: 1; display: none; font-size: 1.1rem; padding: 16px; border-radius: 12px; justify-content: center; align-items: center;">
-                        <i class="fa-solid fa-pause" style="margin-right: 8px;"></i> <span id="pause-text">Tạm
-                            dừng</span>
+                    <button class="btn-outline warning" id="pause-btn" onclick="togglePause()" style="flex: 1; display: none; font-size: 1.1rem; padding: 16px; border-radius: 12px; justify-content: center; align-items: center;">
+                        <i class="fa-solid fa-pause" style="margin-right: 8px;"></i> <span id="pause-text">Tạm dừng</span>
                     </button>
-                    <button class="btn-success" id="download-btn" onclick="downloadBilingual()"
-                        style="flex: 2; margin-top: 0;">
+                    <button class="btn-success" id="download-btn" onclick="downloadBilingual()" style="flex: 2; margin-top: 0;">
                         <i class="fa-solid fa-download"></i> Tải xuống (.html)
                     </button>
                 </div>
@@ -659,11 +684,41 @@
     </div>
 
     <script>
+        let isHighlightEnabled = true;
+
+        function toggleHighlight() {
+            isHighlightEnabled = !isHighlightEnabled;
+            const icon = document.querySelector('#highlight-btn i');
+            const btn = document.getElementById('highlight-btn');
+            
+            if (isHighlightEnabled) {
+                icon.className = 'fa-solid fa-lightbulb';
+                btn.style.color = 'var(--primary)';
+                btn.title = "Tắt tính năng highlight câu";
+            } else {
+                icon.className = 'fa-regular fa-lightbulb';
+                btn.style.color = 'var(--text-muted)';
+                btn.title = "Bật tính năng highlight câu";
+                document.querySelectorAll('.hover-sentence.highlight').forEach(el => el.classList.remove('highlight'));
+            }
+        }
+
+        function toggleWebMark(btn) {
+            const box = btn.closest('.bilingual-box');
+            box.classList.toggle('marked');
+            if (box.classList.contains('marked')) {
+                btn.classList.add('active');
+                btn.innerHTML = '✅ Đã đọc';
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = 'Đánh dấu đã đọc';
+            }
+        }
         function toggleFullscreen() {
             const appCard = document.querySelector('.app-card');
             const icon = document.querySelector('#fullscreen-btn i');
             const btn = document.querySelector('#fullscreen-btn');
-
+            
             if (appCard.classList.contains('fullscreen-mode')) {
                 appCard.classList.remove('fullscreen-mode');
                 icon.className = 'fa-solid fa-expand';
@@ -675,7 +730,7 @@
             }
         }
 
-        document.addEventListener('keydown', function (event) {
+        document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
                 const appCard = document.querySelector('.app-card');
                 if (appCard && appCard.classList.contains('fullscreen-mode')) {
@@ -804,6 +859,7 @@
             const outputDiv = document.getElementById('bilingual-output');
             if (outputDiv) {
                 outputDiv.addEventListener('mouseover', (e) => {
+                    if (!isHighlightEnabled) return;
                     const target = e.target.closest('.hover-sentence');
                     if (target) {
                         const idx = target.getAttribute('data-idx');
@@ -815,8 +871,9 @@
                         }
                     }
                 });
-
+                
                 outputDiv.addEventListener('mouseout', (e) => {
+                    if (!isHighlightEnabled) return;
                     const target = e.target.closest('.hover-sentence');
                     if (target) {
                         const idx = target.getAttribute('data-idx');
@@ -847,7 +904,7 @@
                     sentences.push(text.substring(lastIndex));
                 }
                 if (sentences.length === 0) return text;
-
+                
                 let idx = 0;
                 return sentences.map(s => `<span class="hover-sentence" data-idx="${idx++}">${s}</span>`).join('');
             } catch (e) {
@@ -921,7 +978,7 @@
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const textContent = await page.getTextContent();
-
+                
                 let lastY = -1;
                 let text = '';
                 for (let item of textContent.items) {
@@ -972,16 +1029,16 @@
                 // --- BỘ LỌC DỮ LIỆU BẢNG BIỂU (TABLES) ---
                 const numCount = (sentence.match(/\\d/g) || []).length;
                 const letterCount = (sentence.match(/[a-zA-Z]/g) || []).length;
-
+                
                 // 1. Lọc bỏ các dòng chứa quá nhiều số so với chữ cái (đặc trưng của hàng trong bảng)
                 if (numCount > 4 && letterCount < numCount * 1.5) continue;
-
+                
                 // 2. Lọc bỏ các mảnh vỡ dữ liệu ngắn (ví dụ "0.05", "123", "fig 1")
                 if (letterCount < 6 && numCount > 0) continue;
-
+                
                 // 3. Chuỗi quá ngắn, không có ý nghĩa (ví dụ: "A", "-", "b.")
                 if (letterCount < 4) continue;
-
+                
                 // 4. Lọc Table/Figure caption bị đứt gãy nếu người dùng không muốn đọc
                 if (lower.match(/^(table|fig\\.|figure)\\s*\\d+$/)) continue;
 
@@ -1159,7 +1216,11 @@ ${text}`;
 
                     const box = document.createElement('div');
                     box.className = 'bilingual-box';
+                    box.id = `web-box-${i}`;
                     box.innerHTML = `
+                        <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                            <button class="mark-web-btn" onclick="toggleWebMark(this)">Đánh dấu đã đọc</button>
+                        </div>
                         <div class="source-text">${wrapSentences(sourceText)}</div>
                         <div class="target-text"><span class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Đang phân tích và dịch...</span></div>
                     `;
@@ -1216,6 +1277,10 @@ ${text}`;
         function downloadBilingual() {
             if (bilingualResults.length === 0) return;
 
+            const originalName = document.getElementById('file-name').textContent;
+            const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+            const docId = 'sci_trans_' + nameWithoutExt.replace(/[^a-zA-Z0-9]/g, '_');
+
             let htmlContent = `
                 <!DOCTYPE html>
                 <html lang="vi">
@@ -1259,6 +1324,12 @@ ${text}`;
                             padding: 20px;
                             margin-bottom: 20px;
                             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+                            position: relative;
+                            transition: all 0.3s ease;
+                        }
+                        .box.marked {
+                            background: rgba(16, 185, 129, 0.1);
+                            border-color: rgba(16, 185, 129, 0.4);
                         }
                         .source { 
                             color: var(--text-muted); 
@@ -1284,23 +1355,101 @@ ${text}`;
                         }
                         .label.en { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
                         .label.vi { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+                        
+                        .mark-btn {
+                            background: rgba(255, 255, 255, 0.1);
+                            color: var(--text-muted);
+                            border: 1px solid var(--card-border);
+                            padding: 6px 12px;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-family: inherit;
+                            font-size: 0.85rem;
+                            transition: all 0.2s;
+                        }
+                        .mark-btn:hover {
+                            background: rgba(255, 255, 255, 0.2);
+                            color: white;
+                        }
+                        .mark-btn.active {
+                            background: rgba(16, 185, 129, 0.2);
+                            color: #10b981;
+                            border-color: #10b981;
+                        }
+                        .hover-sentence {
+                            transition: background-color 0.2s, color 0.2s;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        }
+                        .hover-sentence.highlight {
+                            background-color: rgba(234, 179, 8, 0.3);
+                            color: #ffffff;
+                            box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.3);
+                        }
+                        .header-controls {
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            margin-bottom: 40px;
+                        }
+                        .highlight-toggle {
+                            position: fixed;
+                            bottom: 30px;
+                            right: 30px;
+                            z-index: 1000;
+                            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+                            background: rgba(30, 41, 59, 0.95);
+                            backdrop-filter: blur(10px);
+                            border: 1px solid rgba(255,255,255,0.1);
+                            color: #6366f1;
+                            cursor: pointer;
+                            font-size: 1rem;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            padding: 12px 20px;
+                            border-radius: 50px;
+                            transition: all 0.2s;
+                        }
+                        .highlight-toggle:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+                        }
+                        .highlight-toggle.off {
+                            color: var(--text-muted);
+                            background: rgba(15, 23, 42, 0.95);
+                        }
                     </style>
                 </head>
                 <body>
                     <div class="container">
-                        <h2>Tài Liệu Dịch Thuật Song Ngữ</h2>
+                        <div class="header-controls">
+                            <h2 style="margin-bottom: 0;">Tài Liệu Dịch Thuật Song Ngữ</h2>
+                        </div>
+                        <button id="highlight-toggle" class="highlight-toggle" onclick="toggleFileHighlight()">
+                            💡 <span>Tắt Highlight Câu</span>
+                        </button>
             `;
 
-            bilingualResults.forEach(item => {
+            bilingualResults.forEach((item, index) => {
+                const webBox = document.getElementById(`web-box-${index}`);
+                const isMarked = webBox && webBox.classList.contains('marked');
+                const markedClass = isMarked ? ' marked' : '';
+                const btnActive = isMarked ? ' active' : '';
+                const btnText = isMarked ? '✅ Đã đọc' : 'Đánh dấu đã đọc';
+
                 htmlContent += `
-                        <div class="box">
-                            <div class="source">
-                                <div class="label en">Bản Gốc</div><br>
-                                ${item.source}
+                        <div class="box${markedClass}" id="box-${index}">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 15px;">
+                                <div class="label en" style="margin-bottom: 0;">Bản Gốc</div>
+                                <button class="mark-btn${btnActive}" onclick="toggleMark(this)">${btnText}</button>
+                            </div>
+                            <div class="source" style="border-bottom: none; padding-bottom: 0; margin-bottom: 15px;">
+                                ${wrapSentences(item.source)}
                             </div>
                             <div class="target">
                                 <div class="label vi">Bản Dịch</div><br>
-                                ${item.target}
+                                ${wrapSentences(item.target)}
                             </div>
                         </div>
                 `;
@@ -1308,6 +1457,93 @@ ${text}`;
 
             htmlContent += `
                     </div>
+                    <script>
+                        let isHighlightEnabled = true;
+
+                        function toggleFileHighlight() {
+                            isHighlightEnabled = !isHighlightEnabled;
+                            const btn = document.getElementById('highlight-toggle');
+                            const span = btn.querySelector('span');
+                            
+                            if (isHighlightEnabled) {
+                                btn.classList.remove('off');
+                                span.textContent = 'Tắt Highlight Câu';
+                            } else {
+                                btn.classList.add('off');
+                                span.textContent = 'Bật Highlight Câu';
+                                document.querySelectorAll('.hover-sentence.highlight').forEach(el => el.classList.remove('highlight'));
+                            }
+                        }
+
+                        document.addEventListener('mouseover', (e) => {
+                            if (!isHighlightEnabled) return;
+                            const target = e.target.closest('.hover-sentence');
+                            if (target) {
+                                const idx = target.getAttribute('data-idx');
+                                const box = target.closest('.box');
+                                if (box && idx !== null) {
+                                    box.querySelectorAll('.hover-sentence[data-idx="' + idx + '"]').forEach(el => {
+                                        el.classList.add('highlight');
+                                    });
+                                }
+                            }
+                        });
+                        
+                        document.addEventListener('mouseout', (e) => {
+                            if (!isHighlightEnabled) return;
+                            const target = e.target.closest('.hover-sentence');
+                            if (target) {
+                                const idx = target.getAttribute('data-idx');
+                                const box = target.closest('.box');
+                                if (box && idx !== null) {
+                                    box.querySelectorAll('.hover-sentence[data-idx="' + idx + '"]').forEach(el => {
+                                        el.classList.remove('highlight');
+                                    });
+                                }
+                            }
+                        });
+
+                        const docId = '${docId}';
+
+                        document.addEventListener('DOMContentLoaded', () => {
+                            const savedMarks = localStorage.getItem(docId + '_marks');
+                            if (savedMarks) {
+                                try {
+                                    const markedIds = JSON.parse(savedMarks);
+                                    markedIds.forEach(id => {
+                                        const box = document.getElementById(id);
+                                        if (box) {
+                                            box.classList.add('marked');
+                                            const btn = box.querySelector('.mark-btn');
+                                            if (btn) {
+                                                btn.classList.add('active');
+                                                btn.innerHTML = '✅ Đã đọc';
+                                            }
+                                        }
+                                    });
+                                } catch(e) {}
+                            }
+                        });
+
+                        function saveMarks() {
+                            const markedBoxes = document.querySelectorAll('.box.marked');
+                            const markedIds = Array.from(markedBoxes).map(b => b.id);
+                            localStorage.setItem(docId + '_marks', JSON.stringify(markedIds));
+                        }
+
+                        function toggleMark(btn) {
+                            const box = btn.closest('.box');
+                            box.classList.toggle('marked');
+                            if (box.classList.contains('marked')) {
+                                btn.classList.add('active');
+                                btn.innerHTML = '✅ Đã đọc';
+                            } else {
+                                btn.classList.remove('active');
+                                btn.innerHTML = 'Đánh dấu đã đọc';
+                            }
+                            saveMarks();
+                        }
+                    <\/script>
                 </body>
                 </html>
             `;
@@ -1316,9 +1552,6 @@ ${text}`;
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-
-            const originalName = document.getElementById('file-name').textContent;
-            const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
 
             a.download = `${nameWithoutExt}_Song_Ngu.html`;
             document.body.appendChild(a);
