@@ -945,10 +945,34 @@
         }
 
         function chunkText(text, maxLength) {
+            // Lọc bỏ phần References/Tài liệu tham khảo ở cuối bài
+            const refRegex = /\n\s*(?:(?:[0-9]+[\.\s]*|[IVX]+[\.\s]*))?(?:REFERENCES?|BIBLIOGRAPHY|TÀI LIỆU THAM KHẢO)\s*\n/gi;
+            let match;
+            let lastRefIndex = -1;
+            while ((match = refRegex.exec(text)) !== null) {
+                // Chỉ cắt nếu nó nằm ở nửa sau của tài liệu (để tránh cắt nhầm Mục lục)
+                if (match.index > text.length * 0.5) {
+                    lastRefIndex = match.index;
+                }
+            }
+            if (lastRefIndex !== -1) {
+                text = text.substring(0, lastRefIndex);
+                console.log("Đã tự động loại bỏ phần References.");
+            }
+
             // Replace single newlines with space, but preserve double newlines as paragraphs
             text = text.replace(/([^\n])\n([^\n])/g, '$1 $2');
             text = text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
             if (!text) return [];
+
+            // Lọc bỏ toàn bộ các đoạn văn bản là chú thích Hình/Bảng (Bắt đầu bằng Fig., Figure, Table)
+            text = text.split('\n\n').filter(para => {
+                const p = para.trim().toLowerCase();
+                // Bắt đầu bằng chữ fig. hoặc figure hoặc table, theo sau là số hoặc ký tự phân loại (ví dụ: 1, 2a, S1, IV)
+                if (p.match(/^(?:fig\.|figure|table)\s+[a-z0-9\-]+[\.\:]/)) return false;
+                if (p.match(/^(?:fig\.|figure|table)\s+[a-z0-9\-]+$/)) return false;
+                return true;
+            }).join('\n\n');
 
             const sentences = text.match(/[^.!?]+[.!?]*|\n\n|\s+/g) || [text];
             const chunks = [];
