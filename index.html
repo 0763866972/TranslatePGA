@@ -440,6 +440,27 @@
             box-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
         }
 
+        .retry-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            padding: 6px 12px;
+            background: rgba(234, 179, 8, 0.1);
+            border: 1px solid rgba(234, 179, 8, 0.3);
+            color: #d97706;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .retry-btn:hover {
+            background: rgba(234, 179, 8, 0.2);
+            border-color: #d97706;
+        }
+
         .bilingual-output {
             max-height: 500px;
             overflow-y: auto;
@@ -1276,7 +1297,7 @@ MANDATORY FORMAT:
         // --- MAIN PROCESS ---
         async function startTranslation() {
             const engine = document.getElementById('engine-select').value;
-            const isGemini = engine.startsWith('gemini');
+            const isGemini = engine !== 'google';
 
             if (isGemini) {
                 const key = localStorage.getItem('gemini_api_key');
@@ -1364,7 +1385,14 @@ MANDATORY FORMAT:
                             if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 500));
                         }
                     } catch (err) {
-                        targetText = `<span class="error-text">[LỖI]: ${err.message}</span>`;
+                        const errorMsg = err.message || "Lỗi không xác định";
+                        box.querySelector('.target-text').innerHTML = `
+                            <span class="error-text">[LỖI]: ${errorMsg}</span>
+                            <button class="retry-btn" onclick="retryChunk(${i}, \`${sourceText.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, 'web-box-${i}')">
+                                <i class="fa-solid fa-rotate-right"></i> Thử lại câu này
+                            </button>
+                        `;
+                        console.error(`Lỗi tại chunk ${i}:`, err);
                     }
 
                     // Lệnh bí mật từ AI: Nếu là câu rác (chỉ toàn bản quyền/bảng biểu), xóa nó khỏi giao diện luôn
@@ -1821,6 +1849,58 @@ MANDATORY FORMAT:
             const icon = document.querySelector('#theme-toggle i');
             if (icon) icon.className = savedTheme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
         });
+
+        async function retryChunk(index, sourceText, boxId) {
+            const box = document.getElementById(boxId);
+            const targetArea = box.querySelector('.target-text');
+            const engine = document.getElementById('engine-select').value;
+            const isGemini = engine !== 'google';
+            const sl = document.getElementById('source-lang').value;
+            const tl = document.getElementById('target-lang').value;
+
+            targetArea.innerHTML = `<span class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Đang thử lại...</span>`;
+
+            try {
+                let targetText = '';
+                if (isGemini) {
+                    targetText = await translateGemini(sourceText, sl === 'auto' ? 'auto' : sl, tl, 0, engine);
+                } else {
+                    targetText = await translateGoogle(sourceText, sl === 'auto' ? 'auto' : sl, tl);
+                }
+
+                if (targetText.trim() === '[SKIP]') {
+                    box.remove();
+                    return;
+                }
+
+                if (targetText.includes('---TRANSLATION---')) {
+                    const parts = targetText.split('---TRANSLATION---');
+                    const fixedSource = parts[0].replace('---FIXED_SOURCE---', '').trim();
+                    const translated = parts[1].trim();
+
+                    box.querySelector('.source-text').innerHTML = wrapSentences(fixedSource);
+                    targetArea.innerHTML = wrapSentences(translated);
+                    // Update results array
+                    bilingualResults[index] = { source: fixedSource, target: translated };
+                } else {
+                    targetArea.innerHTML = wrapSentences(targetText);
+                    bilingualResults[index] = { source: sourceText, target: targetText };
+                }
+
+                // Render MathJax
+                setTimeout(() => {
+                    if (window.MathJax) MathJax.typesetPromise([box]);
+                }, 100);
+
+            } catch (err) {
+                targetArea.innerHTML = `
+                    <span class="error-text">[LỖI THỬ LẠI]: ${err.message}</span>
+                    <button class="retry-btn" onclick="retryChunk(${index}, \`${sourceText.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, '${boxId}')">
+                        <i class="fa-solid fa-rotate-right"></i> Thử lại lần nữa
+                    </button>
+                `;
+            }
+        }
 
         function resetView() {
             // Hiển thị lại vùng tải lên
