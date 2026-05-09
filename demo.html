@@ -379,8 +379,9 @@
         .progress-bar {
             height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            transition: width 0.3s ease;
+            background: linear-gradient(90deg, #22d3ee, #0ea5e9); /* Xanh sáng chuyển sang xanh đậm hơn */
+            transition: width 0.3s ease, background 0.5s ease;
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
         }
 
         .bilingual-output {
@@ -403,6 +404,7 @@
             flex-direction: column;
             box-sizing: border-box !important;
             overflow: hidden !important;
+            padding-top: 80px !important; /* Chừa chỗ cho thanh Nav không bị đè lên nút */
         }
 
         .fullscreen-mode .live-area {
@@ -551,9 +553,9 @@
     </div>
 
     <nav>
-        <div class="logo" onclick="location.reload()" style="cursor: pointer;">
-            <i class="fa-solid fa-language" style="color: var(--primary);"></i>
-            <span class="logo-text">SciTranslate Song Ngữ</span>
+        <div class="logo">
+            <i class="fa-solid fa-language" onclick="resetView()" style="color: var(--primary); cursor: pointer;"></i>
+            <span class="logo-text" onclick="resetView()" style="cursor: pointer;">SciTranslate Song Ngữ</span>
             <span
                 style="font-size: 0.5em; font-weight: 400; color: var(--text-muted); -webkit-text-fill-color: initial; margin-left: 5px; margin-top: 5px;">design
                 by Phan Gia An</span>
@@ -562,9 +564,7 @@
 
     <div class="container">
         <header>
-            <h1 onclick="location.reload()" style="cursor: pointer; display: inline-block; transition: opacity 0.2s;"
-                onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">Dịch Báo Khoa Học<br>Sang Song
-                Ngữ</h1>
+            <h1 style="display: inline-block;">Dịch Báo Khoa Học<br>Sang Song Ngữ</h1>
         </header>
 
         <div class="app-card">
@@ -1293,8 +1293,15 @@ ${text}`;
                     }
 
                     const progressPercent = Math.round(((i + 1) / chunks.length) * 100);
-                    document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+                    const progressBar = document.getElementById('progress-bar');
+                    progressBar.style.width = `${progressPercent}%`;
                     document.getElementById('progress-text').textContent = `${progressPercent}% (${i + 1}/${chunks.length})`;
+
+                    // Làm đậm màu khi hoàn thành
+                    if (progressPercent === 100) {
+                        progressBar.style.background = '#0ea5e9'; /* Xanh dương sáng rõ */
+                        progressBar.style.boxShadow = '0 0 15px rgba(14, 165, 233, 0.8)';
+                    }
                 }
 
                 statusText.textContent = "Tuyệt vời! Dịch thuật hoàn tất.";
@@ -1591,6 +1598,34 @@ ${text}`;
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+        }
+        function resetView() {
+            // Hiển thị lại vùng tải lên
+            document.getElementById('drop-zone').style.display = 'block';
+            // Ẩn vùng cài đặt và vùng kết quả
+            document.getElementById('settings-area').style.display = 'none';
+            document.getElementById('live-area').style.display = 'none';
+
+            // Thoát chế độ toàn màn hình nếu đang bật
+            const appCard = document.querySelector('.app-card');
+            if (appCard.classList.contains('fullscreen-mode')) {
+                appCard.classList.remove('fullscreen-mode');
+                const icon = document.querySelector('#fullscreen-btn i');
+                if (icon) icon.className = 'fa-solid fa-expand';
+            }
+
+            // Reset dữ liệu
+            bilingualResults = [];
+            document.getElementById('bilingual-output').innerHTML = '';
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.style.width = '0%';
+            progressBar.style.background = 'linear-gradient(90deg, #22d3ee, #0ea5e9)';
+            progressBar.style.boxShadow = 'none';
+            document.getElementById('progress-text').textContent = '0%';
+            document.getElementById('file-input').value = '';
+            // Reset nút tải xuống
+            document.getElementById('download-btn').style.display = 'none';
+            document.getElementById('status-text').textContent = 'Đang xử lý...';
         }
     </script>
 </body>
