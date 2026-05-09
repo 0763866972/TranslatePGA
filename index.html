@@ -1037,16 +1037,10 @@
             text = text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
             if (!text) return [];
 
-            // Lọc bỏ toàn bộ các đoạn văn bản là chú thích Hình/Bảng (Bắt đầu bằng Fig., Figure, Table)
-            text = text.split('\n\n').filter(para => {
-                const p = para.trim().toLowerCase();
-                // Bắt đầu bằng chữ fig. hoặc figure hoặc table, theo sau là số hoặc ký tự phân loại (ví dụ: 1, 2a, S1, IV)
-                if (p.match(/^(?:fig\.|figure|table)\s+[a-z0-9\-]+[\.\:]/)) return false;
-                if (p.match(/^(?:fig\.|figure|table)\s+[a-z0-9\-]+$/)) return false;
-                return true;
-            }).join('\n\n');
 
-            const sentences = text.match(/[^.!?]+[.!?]*|\n\n|\s+/g) || [text];
+
+            // Sử dụng regex thông minh: Chỉ tách câu khi dấu chấm theo sau là khoảng trắng và CHỮ HOA
+            const sentences = text.match(/.*?[.!?](?=\s+\p{Lu}|\s*$)|.+/gsu) || [text];
             const chunks = [];
             let currentChunk = '';
 
@@ -1056,7 +1050,7 @@
 
                 const lower = sentence.toLowerCase();
 
-                // --- BỘ LỌC RÁC THÔNG MINH ---
+                // --- BỘ LỌC RÁC THÔNG MINH (Headers, Footers, Metadata) ---
                 if (lower.includes('translations and content mining')) continue;
                 if (lower.includes('republication/redistribution requires')) continue;
                 if (lower.includes('authorized licensed use limited to')) continue;
@@ -1065,6 +1059,19 @@
                 if (lower.includes('0093-9994')) continue;
                 if (sentence.startsWith('http://') || sentence.startsWith('https://')) continue;
 
+                // Lọc số trang và DOI
+                if (lower.match(/^page\s*\d+/i)) continue;
+                if (lower.match(/^doi:?\s*10\.\d+/i)) continue;
+                if (lower.match(/^vol\.\s*\d+|^issue\s*\d+/i)) continue;
+                if (lower.match(/^issn\s*\d+/i)) continue;
+
+                // Lọc tên các nhà xuất bản phổ biến thường nằm ở header/footer
+                const publishers = ['nature portfolio', 'science direct', 'elsevier', 'springer', 'mdpi', 'frontiers in', 'arxiv:', 'proceedings of', 'journal of'];
+                if (publishers.some(p => lower.includes(p))) continue;
+
+                // Lọc các dòng chỉ chứa ngày tháng năm (thường là footer)
+                if (lower.match(/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/)) continue;
+
                 // --- BỘ LỌC DỮ LIỆU BẢNG BIỂU (TABLES) ---
                 const numCount = (sentence.match(/\d/g) || []).length;
                 const letterCount = (sentence.match(/[a-zA-Z]/g) || []).length;
@@ -1072,14 +1079,13 @@
                 // 1. Lọc bỏ các dòng chứa quá nhiều số so với chữ cái (đặc trưng của hàng trong bảng)
                 if (numCount > 4 && letterCount < numCount * 1.5) continue;
 
-                // 2. Lọc bỏ các mảnh vỡ dữ liệu ngắn (ví dụ "0.05", "123", "fig 1")
-                if (letterCount < 6 && numCount > 0) continue;
+                // 2. Lọc bỏ các mảnh vỡ dữ liệu ngắn (ví dụ "0.05", "123") - Ngoại trừ Fig/Table
+                if (letterCount < 6 && numCount > 0 && !lower.match(/^(fig|table|figure)/)) continue;
 
-                // 3. Chuỗi quá ngắn, không có ý nghĩa (ví dụ: "A", "-", "b.")
-                if (letterCount < 4) continue;
+                // 3. Chuỗi quá ngắn, không có ý nghĩa (ví dụ: "A", "-", "b.") - Ngoại trừ các tiền tố quan trọng
+                if (letterCount < 4 && !lower.match(/^(fig|tab|eq|no|vol)/)) continue;
 
-                // 4. Lọc Table/Figure caption bị đứt gãy nếu người dùng không muốn đọc
-                if (lower.match(/^(table|fig\.|figure)\s*\d+$/)) continue;
+
 
                 // NẾU 1 CÂU BỊ LỖI TRÍCH XUẤT (KHÔNG CÓ DẤU CHẤM) LÀM NÓ DÀI HƠN MAXLENGTH
                 if (sentence.length > maxLength) {
