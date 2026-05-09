@@ -24,6 +24,24 @@
     <!-- Mammoth.js for reading Word DOCX -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
+    <!-- MathJax for rendering formulas -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
     <style>
         :root {
             --bg-color: #17a2b8;
@@ -1065,8 +1083,11 @@
                 if (lower.match(/^vol\.\s*\d+|^issue\s*\d+/i)) continue;
                 if (lower.match(/^issn\s*\d+/i)) continue;
 
-                // Lọc tên các nhà xuất bản phổ biến thường nằm ở header/footer
-                const publishers = ['nature portfolio', 'science direct', 'elsevier', 'springer', 'mdpi', 'frontiers in', 'arxiv:', 'proceedings of', 'journal of'];
+                // Lọc con số trang đứng một mình (ví dụ: "6", "12", "iv")
+                if (sentence.length < 5 && lower.match(/^[0-9ivxldcm]+$/i)) continue;
+
+                // Lọc tên các nhà xuất bản và thông tin trích dẫn phổ biến thường nằm ở header/footer
+                const publishers = ['nature portfolio', 'science direct', 'elsevier', 'springer', 'mdpi', 'frontiers in', 'arxiv:', 'proceedings of', 'journal of', 'ieee transactions on', 'citation information:', 'accepted for publication', 'prior to final publication'];
                 if (publishers.some(p => lower.includes(p))) continue;
 
                 // Lọc các dòng chỉ chứa ngày tháng năm (thường là footer)
@@ -1147,10 +1168,15 @@
 
             const langMap = { 'en': 'English', 'vi': 'Vietnamese', 'auto': 'the native target language' };
             const targetLang = langMap[tl] || tl;
-            const prompt = `You are an expert academic translator. Translate the following scientific text into ${targetLang}. Maintain academic tone.
-CRITICAL INSTRUCTION: If the text consists primarily of table data, numerical charts, journal footnotes, copyright notices (e.g. IEEE), page numbers, author affiliations, or references, YOU MUST NOT TRANSLATE IT. You must output EXACTLY the word "[SKIP]" and nothing else.
+            const prompt = `You are an expert academic translator. Translate the following scientific text into ${targetLang}. 
+Maintain academic tone and precision.
 
-ONLY output the translation or "[SKIP]". No explanations.
+CRITICAL INSTRUCTION: 
+1. If the text contains mathematical formulas, expressions, or equations, YOU MUST identify them and reconstruct them into clean LaTeX format (e.g., using $...$ for inline or $$...$$ for blocks).
+2. Fix broken symbols from PDF extraction (e.g., if you see "S2" in a formula context, it likely means "S^2"; if you see "\" next to a term, it might be a square root).
+3. If the text consists primarily of table data, numerical charts, journal footnotes, copyright notices, or references, output EXACTLY "[SKIP]".
+
+ONLY output the translation with LaTeX formulas or "[SKIP]". No explanations.
 
 Text to translate:
 ${text}`;
@@ -1300,6 +1326,13 @@ ${text}`;
                     } else {
                         box.querySelector('.target-text').innerHTML = wrapSentences(targetText);
                         bilingualResults.push({ source: sourceText, target: targetText });
+
+                        // Render MathJax for the newly added content với một chút delay để DOM ổn định
+                        setTimeout(() => {
+                            if (window.MathJax && window.MathJax.typesetPromise) {
+                                window.MathJax.typesetPromise([box]).catch(err => console.error('MathJax error:', err));
+                            }
+                        }, 100);
                     }
 
                     const progressPercent = Math.round(((i + 1) / chunks.length) * 100);
