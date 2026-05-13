@@ -1383,17 +1383,19 @@
             window.currentApiKeyIndex++;
 
             const langMap = { 'en': 'English', 'vi': 'Vietnamese', 'auto': 'the native target language' };
+            const sourceMap = { 'en': 'English', 'vi': 'Vietnamese', 'auto': 'the original' };
             const targetLang = langMap[tl] || tl;
+            const sourceLang = sourceMap[sl] || 'the original';
             const systemPrompt = `You are a world-class academic translator and LaTeX expert.
 TASK: 
-1. Repair the English source text by converting math/variables into LaTeX $...$.
+1. Repair ${sourceLang === 'the original' ? 'the original' : 'the ' + sourceLang} source text by converting math/variables into LaTeX $...$.
 2. Translate the text into ${targetLang} while preserving LaTeX.
 
 MANDATORY FORMAT:
 ---FIXED_SOURCE---
-(English LaTeX)
+(Repaired original text here)
 ---TRANSLATION---
-(Translation LaTeX)`;
+(Translated text here)`;
 
             const body = {
                 contents: [{ parts: [{ text: `Text to process:\n${text}` }] }],
@@ -1708,8 +1710,10 @@ MANDATORY FORMAT:
 
         .hover-sentence { border-radius: 4px; transition: 0.2s; cursor: pointer; }
         .hover-sentence.highlight { background: var(--highlight-bg) !important; color: var(--highlight-text) !important; }
-        .hover-sentence.selection-hover { background: rgba(16, 185, 129, 0.15) !important; }
-        .hover-sentence.pinned-selection { background: #10b981 !important; color: white !important; }
+        .hover-sentence.selection-hover { background: rgba(16, 185, 129, 0.2) !important; cursor: cell !important; }
+        .hover-sentence.pinned-selection { background: rgba(16, 185, 129, 0.5) !important; color: white !important; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.7) !important; }
+
+        mjx-container { user-select: all !important; cursor: text !important; }
 
         footer { text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.85rem; }
     </style>
@@ -1852,7 +1856,7 @@ MANDATORY FORMAT:
                 const data = rawResults[boxIndex];
                 if (data) {
                     const baseText = isSource ? data.source : data.target;
-                    const sentences = baseText.match(/.*?[.!?](?=\s+\p{Lu}|\s*$)|.+/gsu) || [baseText];
+                    const sentences = baseText.match(/.*?[.!?](?=\\s+\\p{Lu}|\\s*$)|.+/gsu) || [baseText];
                     fullText += (fullText ? " " : "") + (sentences[idxInBox] || el.innerText).trim();
                 } else {
                     fullText += (fullText ? " " : "") + el.innerText.trim();
@@ -1867,8 +1871,13 @@ MANDATORY FORMAT:
                         'text/html': new Blob([htmlVersion], { type: 'text/html' })
                     })
                 ]);
-                alert("Đã copy " + pinnedElements.length + " đoạn!");
-                clearPinned();
+                const btn = document.getElementById('copy-pinned-btn');
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Đã chép!';
+                setTimeout(() => {
+                    btn.innerHTML = original;
+                    clearPinned();
+                }, 1500);
             } catch(e) { alert("Lỗi copy!"); }
         }
 

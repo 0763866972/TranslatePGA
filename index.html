@@ -1383,17 +1383,19 @@
             window.currentApiKeyIndex++;
 
             const langMap = { 'en': 'English', 'vi': 'Vietnamese', 'auto': 'the native target language' };
+            const sourceMap = { 'en': 'English', 'vi': 'Vietnamese', 'auto': 'the original' };
             const targetLang = langMap[tl] || tl;
+            const sourceLang = sourceMap[sl] || 'the original';
             const systemPrompt = `You are a world-class academic translator and LaTeX expert.
 TASK: 
-1. Repair the English source text by converting math/variables into LaTeX $...$.
+1. Repair ${sourceLang === 'the original' ? 'the original' : 'the ' + sourceLang} source text by converting math/variables into LaTeX $...$.
 2. Translate the text into ${targetLang} while preserving LaTeX.
 
 MANDATORY FORMAT:
 ---FIXED_SOURCE---
-(English LaTeX)
+(Repaired original text here)
 ---TRANSLATION---
-(Translation LaTeX)`;
+(Translated text here)`;
 
             const body = {
                 contents: [{ parts: [{ text: `Text to process:\n${text}` }] }],
