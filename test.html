@@ -1304,10 +1304,17 @@
 
                 // Lọc tên các nhà xuất bản và thông tin trích dẫn phổ biến thường nằm ở header/footer
                 const publishers = ['nature portfolio', 'science direct', 'elsevier', 'springer', 'mdpi', 'frontiers in', 'arxiv:', 'proceedings of', 'journal of', 'ieee transactions on', 'citation information:', 'accepted for publication', 'prior to final publication'];
-                if (publishers.some(p => lower.includes(p))) continue;
+                
+                // Nếu câu có chứa chữ 'abstract', bảo vệ nó không bị lọc
+                if (lower.includes('abstract') || lower.includes('tóm tắt')) {
+                    // Bỏ qua các bước lọc rác bên dưới để bảo vệ Abstract
+                } else {
+                    // Chỉ lọc các câu ngắn (dưới 150 ký tự) có chứa tên nhà xuất bản
+                    if (sentence.length < 150 && publishers.some(p => lower.includes(p))) continue;
 
-                // Lọc các dòng chỉ chứa ngày tháng năm (thường là footer)
-                if (lower.match(/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/)) continue;
+                    // Lọc các dòng chỉ chứa ngày tháng năm (thường là footer)
+                    if (sentence.length < 100 && lower.match(/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/)) continue;
+                }
 
                 // --- BỘ LỌC DỮ LIỆU BẢNG BIỂU (TABLES) ---
                 const numCount = (sentence.match(/\d/g) || []).length;
