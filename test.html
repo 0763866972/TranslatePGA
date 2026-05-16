@@ -1237,18 +1237,29 @@
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const textContent = await page.getTextContent();
+                const viewport = page.getViewport({ scale: 1.0 });
+                const pageHeight = viewport.height;
 
                 let lastY = -1;
                 let text = '';
                 for (let item of textContent.items) {
-                    if (lastY == -1 || Math.abs(item.transform[5] - lastY) > 5) {
+                    const y = item.transform[5];
+
+                    // BỘ LỌC THÔNG MINH DỰA TRÊN TỌA ĐỘ Y (Khoảng cách vật lý)
+                    // Bỏ qua các dòng text nằm sát mép trên (Header) hoặc mép dưới (Footer) của trang (Khoảng 40 points)
+                    if (y < 40 || y > pageHeight - 40) {
+                        continue;
+                    }
+
+                    if (lastY == -1 || Math.abs(y - lastY) > 5) {
                         text += '\n' + item.str;
                     } else {
                         text += item.str;
                     }
-                    lastY = item.transform[5];
+                    lastY = y;
                 }
-                fullText += text + '\n\n';
+                // Dùng 1 khoảng trắng (hoặc 1 dấu \n) để nối trang, giúp câu bị đứt đoạn giữa 2 trang liền mạch lại
+                fullText += text + '\n';
             }
             return fullText;
         }
@@ -1321,7 +1332,7 @@
                 const publishers = ['nature portfolio', 'science direct', 'elsevier', 'springer', 'mdpi', 'frontiers in', 'arxiv:', 'proceedings of', 'journal of', 'ieee transactions on', 'citation information:', 'accepted for publication', 'prior to final publication'];
                 // Lọc tên các nhà xuất bản và thông tin trích dẫn (Chỉ lọc nếu chuỗi ngắn, tránh lọc nhầm Abstract)
                 if (publishers.some(p => lower.includes(p)) && sentence.length < 150 && !isProtected) continue;
-                
+
                 // Lọc các dòng chỉ chứa ngày tháng năm (thường là footer)
                 if (lower.match(/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/) && !isProtected) continue;
 
@@ -1548,7 +1559,7 @@ MANDATORY FORMAT:
                         </div>
                     `;
                     outputDiv.appendChild(box);
-                    
+
                     // Chỉ auto-scroll nếu người dùng KHÔNG cuộn lên
                     if (!isUserScrollingUp) {
                         outputDiv.scrollTop = outputDiv.scrollHeight;
