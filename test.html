@@ -876,7 +876,6 @@
 
         let bilingualResults = [];
         let isPaused = false;
-        let currentTranslationId = 0;
 
         function togglePause() {
             isPaused = !isPaused;
@@ -1305,17 +1304,10 @@
 
                 // Lọc tên các nhà xuất bản và thông tin trích dẫn phổ biến thường nằm ở header/footer
                 const publishers = ['nature portfolio', 'science direct', 'elsevier', 'springer', 'mdpi', 'frontiers in', 'arxiv:', 'proceedings of', 'journal of', 'ieee transactions on', 'citation information:', 'accepted for publication', 'prior to final publication'];
-                
-                // Nếu câu có chứa chữ 'abstract', bảo vệ nó không bị lọc
-                if (lower.includes('abstract') || lower.includes('tóm tắt')) {
-                    // Bỏ qua các bước lọc rác bên dưới để bảo vệ Abstract
-                } else {
-                    // Chỉ lọc các câu ngắn (dưới 150 ký tự) có chứa tên nhà xuất bản
-                    if (sentence.length < 150 && publishers.some(p => lower.includes(p))) continue;
+                if (publishers.some(p => lower.includes(p))) continue;
 
-                    // Lọc các dòng chỉ chứa ngày tháng năm (thường là footer)
-                    if (sentence.length < 100 && lower.match(/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/)) continue;
-                }
+                // Lọc các dòng chỉ chứa ngày tháng năm (thường là footer)
+                if (lower.match(/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/)) continue;
 
                 // --- BỘ LỌC DỮ LIỆU BẢNG BIỂU (TABLES) ---
                 const numCount = (sentence.match(/\d/g) || []).length;
@@ -1391,27 +1383,20 @@
             window.currentApiKeyIndex++;
 
             const langMap = { 'en': 'English', 'vi': 'Vietnamese', 'auto': 'the native target language' };
-            const sourceMap = { 'en': 'English', 'vi': 'Vietnamese', 'auto': 'the original' };
             const targetLang = langMap[tl] || tl;
-            const sourceLang = sourceMap[sl] || 'the original';
             const systemPrompt = `You are a world-class academic translator and LaTeX expert.
 TASK: 
-1. Repair ${sourceLang === 'the original' ? 'the original' : 'the ' + sourceLang} source text by converting math/variables into LaTeX $...$.
+1. Repair the English source text by converting math/variables into LaTeX $...$.
 2. Translate the text into ${targetLang} while preserving LaTeX.
-
-ABSOLUTE RULES:
-- You MUST translate EVERY SINGLE SENTENCE. Do not ignore "Index Terms", "Abstract", author names, or metadata.
-- If you leave the TRANSLATION section empty or skip parts, the system will fail. You MUST provide the full translation.
-- Do NOT output [SKIP] under any circumstances.
 
 MANDATORY FORMAT:
 ---FIXED_SOURCE---
-(Repaired original text here)
+(English LaTeX)
 ---TRANSLATION---
-(Translated text here)`;
+(Translation LaTeX)`;
 
             const body = {
-                contents: [{ parts: [{ text: `Text to process:\n${text}\n\n[End of text. Please provide the output in the MANDATORY FORMAT, ensuring the TRANSLATION section contains the full ${targetLang} translation of all words and metadata.]` }] }],
+                contents: [{ parts: [{ text: `Text to process:\n${text}` }] }],
                 system_instruction: { parts: [{ text: systemPrompt }] },
                 generationConfig: {
                     temperature: 0.1,
@@ -1461,7 +1446,6 @@ MANDATORY FORMAT:
 
         // --- MAIN PROCESS ---
         async function startTranslation() {
-            const myTranslationId = ++currentTranslationId;
             const engine = document.getElementById('engine-select').value;
             const isGemini = engine !== 'google';
 
@@ -1514,9 +1498,7 @@ MANDATORY FORMAT:
                 document.getElementById('download-btn').style.display = 'none';
 
                 for (let i = 0; i < chunks.length; i++) {
-                    if (myTranslationId !== currentTranslationId) return;
                     while (isPaused) {
-                        if (myTranslationId !== currentTranslationId) return;
                         await new Promise(r => setTimeout(r, 500));
                     }
 
@@ -1571,20 +1553,14 @@ MANDATORY FORMAT:
                     }
 
                     // Lệnh bí mật từ AI: Nếu là câu rác (chỉ toàn bản quyền/bảng biểu), xóa nó khỏi giao diện luôn
-                    if (!targetText || !targetText.trim() || targetText.trim() === '[SKIP]') {
-                        // Fallback siêu mạnh: Nếu trống hoàn toàn hoặc AI skip, dùng luôn bản gốc
-                        box.querySelector('.source-text').innerHTML = wrapSentences(sourceText);
-                        box.querySelector('.target-text').innerHTML = wrapSentences(sourceText);
-                        bilingualResults[i] = { source: sourceText, target: sourceText };
+                    if (targetText.trim() === '[SKIP]') {
+                        outputDiv.removeChild(box);
                     } else {
                         // Xử lý kết quả từ Gemini (có chứa FIXED_SOURCE)
                         if (targetText.includes('---TRANSLATION---')) {
                             const parts = targetText.split('---TRANSLATION---');
                             const fixedSource = parts[0].replace('---FIXED_SOURCE---', '').trim();
-                            let translated = parts[1] ? parts[1].trim() : '';
-
-                            // Nếu AI lười biếng bỏ trống bản dịch, tự động lấy bản gốc điền vào để không bị trống UI
-                            if (!translated || translated.length < 2) translated = fixedSource;
+                            const translated = parts[1].trim();
 
                             box.querySelector('.source-text').innerHTML = wrapSentences(fixedSource);
                             box.querySelector('.target-text').innerHTML = wrapSentences(translated);
@@ -1732,10 +1708,8 @@ MANDATORY FORMAT:
 
         .hover-sentence { border-radius: 4px; transition: 0.2s; cursor: pointer; }
         .hover-sentence.highlight { background: var(--highlight-bg) !important; color: var(--highlight-text) !important; }
-        .hover-sentence.selection-hover { background: rgba(16, 185, 129, 0.2) !important; cursor: cell !important; }
-        .hover-sentence.pinned-selection { background: rgba(16, 185, 129, 0.5) !important; color: white !important; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.7) !important; }
-
-        mjx-container { user-select: all !important; cursor: text !important; }
+        .hover-sentence.selection-hover { background: rgba(16, 185, 129, 0.15) !important; }
+        .hover-sentence.pinned-selection { background: #10b981 !important; color: white !important; }
 
         footer { text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.85rem; }
     </style>
@@ -1878,7 +1852,7 @@ MANDATORY FORMAT:
                 const data = rawResults[boxIndex];
                 if (data) {
                     const baseText = isSource ? data.source : data.target;
-                    const sentences = baseText.match(/.*?[.!?](?=\\s+\\p{Lu}|\\s*$)|.+/gsu) || [baseText];
+                    const sentences = baseText.match(/.*?[.!?](?=\s+\p{Lu}|\s*$)|.+/gsu) || [baseText];
                     fullText += (fullText ? " " : "") + (sentences[idxInBox] || el.innerText).trim();
                 } else {
                     fullText += (fullText ? " " : "") + el.innerText.trim();
@@ -1893,13 +1867,8 @@ MANDATORY FORMAT:
                         'text/html': new Blob([htmlVersion], { type: 'text/html' })
                     })
                 ]);
-                const btn = document.getElementById('copy-pinned-btn');
-                const original = btn.innerHTML;
-                btn.innerHTML = '<i class="fa-solid fa-check"></i> Đã chép!';
-                setTimeout(() => {
-                    btn.innerHTML = original;
-                    clearPinned();
-                }, 1500);
+                alert("Đã copy " + pinnedElements.length + " đoạn!");
+                clearPinned();
             } catch(e) { alert("Lỗi copy!"); }
         }
 
@@ -2045,7 +2014,6 @@ MANDATORY FORMAT:
         }
 
         function resetView() {
-            currentTranslationId++; // Dừng vòng lặp dịch cũ
             // Hiển thị lại vùng tải lên
             document.getElementById('drop-zone').style.display = 'block';
             // Ẩn vùng cài đặt và vùng kết quả
