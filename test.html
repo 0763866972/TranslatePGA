@@ -773,6 +773,28 @@
                     </div>
                 </div>
 
+                <!-- Filter Settings -->
+                <div class="filter-controls"
+                    style="margin-bottom: 20px; background: var(--box-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--card-border);">
+                    <label class="form-label" style="margin-bottom: 10px;">✂️ Bộ Lọc Header/Footer</label>
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <label for="margin-filter" style="font-size: 0.9rem; color: var(--text-muted);">Khoảng
+                                    cách lề (points): <span id="margin-value"
+                                        style="font-weight: 600; color: var(--primary);">40</span></label>
+                            </div>
+                            <input type="range" id="margin-filter" min="0" max="150" value="40" style="width: 100%;"
+                                oninput="document.getElementById('margin-value').innerText = this.value">
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <label for="dash-filter" style="font-size: 0.9rem; color: var(--text-muted);">Lọc dòng kẻ
+                                ngang (---- / ____)</label>
+                            <input type="checkbox" id="dash-filter" checked style="width: 18px; height: 18px;">
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Language Selection -->
                 <label class="form-label">🌍 Ngôn ngữ</label>
                 <div class="lang-group">
@@ -1240,14 +1262,16 @@
                 const viewport = page.getViewport({ scale: 1.0 });
                 const pageHeight = viewport.height;
 
+                const marginThreshold = parseInt(document.getElementById('margin-filter')?.value || '40');
+
                 let lastY = -1;
                 let text = '';
                 for (let item of textContent.items) {
                     const y = item.transform[5];
 
                     // BỘ LỌC THÔNG MINH DỰA TRÊN TỌA ĐỘ Y (Khoảng cách vật lý)
-                    // Bỏ qua các dòng text nằm sát mép trên (Header) hoặc mép dưới (Footer) của trang (Khoảng 40 points)
-                    if (y < 40 || y > pageHeight - 40) {
+                    // Bỏ qua các dòng text nằm sát mép trên (Header) hoặc mép dưới (Footer) của trang
+                    if (y < marginThreshold || y > pageHeight - marginThreshold) {
                         continue;
                     }
 
@@ -1307,34 +1331,14 @@
                 // BẢO VỆ ĐOẠN ABSTRACT VÀ METADATA: Không được lọc nếu chứa các từ khóa này
                 const isProtected = lower.includes('abstract') || lower.includes('index terms') || lower.includes('keywords');
 
-                // --- BỘ LỌC RÁC THÔNG MINH (Headers, Footers, Metadata) ---
-                if (!isProtected) {
-                    if (lower.includes('translations and content mining')) continue;
-                    if (lower.includes('republication/redistribution requires')) continue;
-                    if (lower.includes('authorized licensed use limited to')) continue;
-                    if (lower.includes('ieee.org/publications')) continue;
-                    if (lower.match(/©|\(c\)/) && lower.includes('ieee')) continue;
-                    if (lower.includes('0093-9994')) continue;
-                    if (sentence.startsWith('http://') || sentence.startsWith('https://')) continue;
-                }
-
-                // Lọc số trang và DOI (Chỉ lọc nếu không phải đoạn Abstract)
-                if (!isProtected) {
-                    if (lower.match(/^page\s*\d+/i)) continue;
-                    if (lower.match(/^doi:?\s*10\.\d+/i)) continue;
-                    if (lower.match(/^vol\.\s*\d+|^issue\s*\d+/i)) continue;
-                    if (lower.match(/^issn\s*\d+/i)) continue;
+                // Lọc dòng kẻ ngang nếu được bật
+                const dashFilterChecked = document.getElementById('dash-filter') ? document.getElementById('dash-filter').checked : true;
+                if (dashFilterChecked && lower.length >= 3 && lower.replace(/\s/g, '').match(/^[-_—=]+$/)) {
+                    continue;
                 }
 
                 // Lọc con số trang đứng một mình (ví dụ: "6", "12", "iv")
                 if (sentence.length < 5 && lower.match(/^[0-9ivxldcm]+$/i)) continue;
-
-                const publishers = ['nature portfolio', 'science direct', 'elsevier', 'springer', 'mdpi', 'frontiers in', 'arxiv:', 'proceedings of', 'journal of', 'ieee transactions on', 'citation information:', 'accepted for publication', 'prior to final publication'];
-                // Lọc tên các nhà xuất bản và thông tin trích dẫn (Chỉ lọc nếu chuỗi ngắn, tránh lọc nhầm Abstract)
-                if (publishers.some(p => lower.includes(p)) && sentence.length < 150 && !isProtected) continue;
-
-                // Lọc các dòng chỉ chứa ngày tháng năm (thường là footer)
-                if (lower.match(/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/) && !isProtected) continue;
 
                 // --- BỘ LỌC DỮ LIỆU BẢNG BIỂU (TABLES) ---
                 const numCount = (sentence.match(/\d/g) || []).length;
