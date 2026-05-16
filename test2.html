@@ -1484,23 +1484,34 @@
             const langMap = { 'en': 'English', 'vi': 'Vietnamese' };
             const targetLang = langMap[tl] || tl;
             const sourceLangText = langMap[sl] || (sl === 'auto' ? 'original' : sl);
-            const systemPrompt = `You are a world-class academic translator and LaTeX expert.
+            const isAcademicEnglish = (sl === 'vi' || sl === 'en') && tl === 'en';
+            const academicRules = isAcademicEnglish ? `
+When processing English academic text (either by translating from Vietnamese or paraphrasing existing English), you must strictly follow the principles in "English for Writing Research Papers" by Adrian Wallwork:
+
+ACADEMIC WRITING PRINCIPLES:
+1. CLARITY & BREVITY: Use direct language. Avoid wordiness and redundancy.
+2. ACTIVE VOICE: Use active voice to describe your own actions/results (e.g., "We found" instead of "It was found").
+3. VERBS OVER NOUNS: Avoid nominalizations (e.g., use "investigate" instead of "conduct an investigation").
+4. SENTENCE STRUCTURE: Keep sentences relatively short (avg. 20-25 words). One main idea per sentence.
+5. NO VINGLISH: Ensure every English sentence has a clear subject. Avoid topic-comment structures common in Vietnamese.
+6. PRECISION: Use formal, precise academic vocabulary. Avoid vague terms like "very", "thing", "more and more".
+7. FLOW: Use appropriate logical connectors (However, Consequently, Furthermore).` : '';
+
+            const systemPrompt = `You are a world-class academic translator and LaTeX expert, specializing in translating scientific research papers. ${academicRules}
+
 TASK: 
 1. Repair the ${sourceLangText} source text by converting math/variables into LaTeX $...$.
-2. Translate the text into ${targetLang} while preserving LaTeX.
+2. Translate the text into ${targetLang} ${isAcademicEnglish ? 'while applying the academic principles above' : ''}. Preserve all LaTeX.
 
 ABSOLUTE RULES:
-- You MUST translate EVERY SINGLE SENTENCE.
-- DO NOT IGNORE "Abstract", "Index Terms", "Keywords", author names, or any metadata. 
-- You MUST provide the full translation for every part of the text provided.
-- If you leave the TRANSLATION section empty or skip parts, the system will fail.
-- Do NOT output [SKIP] under any circumstances.
+- You MUST translate EVERY SINGLE SENTENCE, including metadata (Abstract, Keywords, author names).
+- DO NOT output [SKIP] or leave the translation empty.
 
 MANDATORY FORMAT:
 ---FIXED_SOURCE---
 (Repaired original text here)
 ---TRANSLATION---
-(Translated text here)`;
+(Academic translation here)`;
 
             const body = {
                 contents: [{ parts: [{ text: `Text to process:\n${text}\n\n[End of text. Please provide the output in the MANDATORY FORMAT, ensuring the TRANSLATION section contains the full ${targetLang} translation of all words and metadata.]` }] }],
