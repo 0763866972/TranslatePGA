@@ -873,10 +873,19 @@
         const fileInput = document.getElementById('file-input');
         const settingsArea = document.getElementById('settings-area');
         const liveArea = document.getElementById('live-area');
+        const outputDiv = document.getElementById('bilingual-output');
 
         let bilingualResults = [];
         let isPaused = false;
         let currentTranslationId = 0;
+        let isUserScrollingUp = false;
+
+        // Lắng nghe sự kiện cuộn để biết người dùng có đang cố tình lướt lên xem hay không
+        outputDiv.addEventListener('scroll', () => {
+            // Kiểm tra xem khoảng cách từ vị trí cuộn hiện tại đến đáy có nhỏ hơn 50px không
+            const isAtBottom = Math.abs(outputDiv.scrollHeight - outputDiv.scrollTop - outputDiv.clientHeight) < 50;
+            isUserScrollingUp = !isAtBottom;
+        });
 
         function togglePause() {
             isPaused = !isPaused;
@@ -1478,9 +1487,10 @@ MANDATORY FORMAT:
             liveArea.style.display = 'block';
 
             const statusText = document.getElementById('status-text');
-            const outputDiv = document.getElementById('bilingual-output');
+            // Reset state
             outputDiv.innerHTML = '';
             bilingualResults = [];
+            isUserScrollingUp = false;
 
             const file = fileInput.files[0];
             const ext = file.name.split('.').pop().toLowerCase();
@@ -1538,7 +1548,11 @@ MANDATORY FORMAT:
                         </div>
                     `;
                     outputDiv.appendChild(box);
-                    outputDiv.scrollTop = outputDiv.scrollHeight;
+
+                    // Chỉ auto-scroll nếu người dùng KHÔNG cuộn lên
+                    if (!isUserScrollingUp) {
+                        outputDiv.scrollTop = outputDiv.scrollHeight;
+                    }
 
                     let targetText = '';
                     try {
@@ -1594,10 +1608,20 @@ MANDATORY FORMAT:
                             bilingualResults[i] = { source: sourceText, target: targetText };
                         }
 
+                        // Tự động cuộn lại sau khi văn bản được điền vào (vì lúc này box sẽ phình to ra)
+                        if (!isUserScrollingUp) {
+                            outputDiv.scrollTop = outputDiv.scrollHeight;
+                        }
+
                         // Render MathJax for the newly added content với một chút delay để DOM ổn định
                         setTimeout(() => {
                             if (window.MathJax && window.MathJax.typesetPromise) {
-                                window.MathJax.typesetPromise([box]).catch(err => console.error('MathJax error:', err));
+                                window.MathJax.typesetPromise([box]).then(() => {
+                                    // Cuộn lại lần cuối phòng khi MathJax làm box phình to thêm nữa
+                                    if (!isUserScrollingUp) {
+                                        outputDiv.scrollTop = outputDiv.scrollHeight;
+                                    }
+                                }).catch(err => console.error('MathJax error:', err));
                             }
                         }, 100);
                     }
