@@ -779,31 +779,46 @@
                     <label class="form-label" style="margin-bottom: 12px;">✂️ Bộ Lọc Header/Footer</label>
                     <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                         <div style="flex: 1;">
-                            <label for="header-filter" style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Lề Trên (Header)</label>
+                            <label for="header-filter"
+                                style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Lề
+                                Trên (Header)</label>
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <input type="number" id="header-filter" min="0" max="300" value="35" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-weight: 600;">
+                                <input type="number" id="header-filter" min="0" max="300" value="35"
+                                    style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-weight: 600;">
                                 <span style="font-size: 0.75rem; color: var(--text-muted);">pts</span>
                             </div>
                         </div>
                         <div style="flex: 1;">
-                            <label for="footer-filter" style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Lề Dưới (Footer)</label>
+                            <label for="footer-filter"
+                                style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Lề
+                                Dưới (Footer)</label>
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <input type="number" id="footer-filter" min="0" max="300" value="35" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-weight: 600;">
+                                <input type="number" id="footer-filter" min="0" max="300" value="35"
+                                    style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-weight: 600;">
                                 <span style="font-size: 0.75rem; color: var(--text-muted);">pts</span>
                             </div>
                         </div>
                     </div>
 
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px; padding-top: 10px; border-top: 1px dashed var(--card-border);">
-                            <label for="target-page" style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">🎯 Chỉ dịch trang số:</label>
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                <input type="text" id="target-page" placeholder="Tất cả" style="width: 70px; padding: 6px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); text-align: center;">
-                                <button type="button" onclick="document.getElementById('target-page').value=''" style="background: rgba(255,255,255,0.1); border: 1px solid var(--card-border); color: var(--text-muted); font-size: 0.75rem; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.color='white'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.color='var(--text-muted)'">Tất cả</button>
-                            </div>
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px; padding-top: 10px; border-top: 1px dashed var(--card-border);">
+                        <label for="target-page"
+                            style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">🎯 Chỉ dịch trang
+                            số:</label>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <input type="text" id="target-page" placeholder="Tất cả"
+                                style="width: 70px; padding: 6px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); text-align: center;">
+                            <button type="button" onclick="document.getElementById('target-page').value=''"
+                                style="background: rgba(255,255,255,0.1); border: 1px solid var(--card-border); color: var(--text-muted); font-size: 0.75rem; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s;"
+                                onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.color='white'"
+                                onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.color='var(--text-muted)'">Tất
+                                cả</button>
                         </div>
-                        <button type="button" class="btn-outline" onclick="openMeasureTool()" style="font-size: 0.85rem; padding: 8px; border-style: dashed; width: 100%; margin-top: 5px;">
-                            <i class="fa-solid fa-ruler-combined"></i> Mở thước đo & Chọn trang
-                        </button>
+                    </div>
+                    <button type="button" class="btn-outline" onclick="openMeasureTool()"
+                        style="font-size: 0.85rem; padding: 8px; border-style: dashed; width: 100%; margin-top: 5px;">
+                        <i class="fa-solid fa-ruler-combined"></i> Mở thước đo & Chọn trang
+                    </button>
                 </div>
 
                 <!-- Language Selection -->
@@ -1299,10 +1314,10 @@
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjs.getDocument(arrayBuffer).promise;
             let fullText = '';
-            
+
             const targetPageVal = document.getElementById('target-page')?.value.trim();
             let pagesToProcess = [];
-            
+
             if (targetPageVal) {
                 if (targetPageVal.includes('-')) {
                     const parts = targetPageVal.split('-');
@@ -1484,34 +1499,23 @@
             const langMap = { 'en': 'English', 'vi': 'Vietnamese' };
             const targetLang = langMap[tl] || tl;
             const sourceLangText = langMap[sl] || (sl === 'auto' ? 'original' : sl);
-            const isAcademicEnglish = (sl === 'vi' || sl === 'en') && tl === 'en';
-            const academicRules = isAcademicEnglish ? `
-When processing English academic text (either by translating from Vietnamese or paraphrasing existing English), you must strictly follow the principles in "English for Writing Research Papers" by Adrian Wallwork:
-
-ACADEMIC WRITING PRINCIPLES:
-1. CLARITY & BREVITY: Use direct language. Avoid wordiness and redundancy.
-2. ACTIVE VOICE: Use active voice to describe your own actions/results (e.g., "We found" instead of "It was found").
-3. VERBS OVER NOUNS: Avoid nominalizations (e.g., use "investigate" instead of "conduct an investigation").
-4. SENTENCE STRUCTURE: Keep sentences relatively short (avg. 20-25 words). One main idea per sentence.
-5. NO VINGLISH: Ensure every English sentence has a clear subject. Avoid topic-comment structures common in Vietnamese.
-6. PRECISION: Use formal, precise academic vocabulary. Avoid vague terms like "very", "thing", "more and more".
-7. FLOW: Use appropriate logical connectors (However, Consequently, Furthermore).` : '';
-
-            const systemPrompt = `You are a world-class academic translator and LaTeX expert, specializing in translating scientific research papers. ${academicRules}
-
+            const systemPrompt = `You are a world-class academic translator and LaTeX expert.
 TASK: 
 1. Repair the ${sourceLangText} source text by converting math/variables into LaTeX $...$.
-2. Translate the text into ${targetLang} ${isAcademicEnglish ? 'while applying the academic principles above' : ''}. Preserve all LaTeX.
+2. Translate the text into ${targetLang} while preserving LaTeX.
 
 ABSOLUTE RULES:
-- You MUST translate EVERY SINGLE SENTENCE, including metadata (Abstract, Keywords, author names).
-- DO NOT output [SKIP] or leave the translation empty.
+- You MUST translate EVERY SINGLE SENTENCE.
+- DO NOT IGNORE "Abstract", "Index Terms", "Keywords", author names, or any metadata. 
+- You MUST provide the full translation for every part of the text provided.
+- If you leave the TRANSLATION section empty or skip parts, the system will fail.
+- Do NOT output [SKIP] under any circumstances.
 
 MANDATORY FORMAT:
 ---FIXED_SOURCE---
 (Repaired original text here)
 ---TRANSLATION---
-(Academic translation here)`;
+(Translated text here)`;
 
             const body = {
                 contents: [{ parts: [{ text: `Text to process:\n${text}\n\n[End of text. Please provide the output in the MANDATORY FORMAT, ensuring the TRANSLATION section contains the full ${targetLang} translation of all words and metadata.]` }] }],
@@ -1591,7 +1595,7 @@ MANDATORY FORMAT:
                 let text = '';
                 const file = currentFile;
                 if (!file) throw new Error("Không tìm thấy tệp để xử lý.");
-                
+
                 const ext = file.name.split('.').pop().toLowerCase();
                 const sl = document.getElementById('source-lang').value;
                 const tl = document.getElementById('target-lang').value;
@@ -2304,7 +2308,7 @@ MANDATORY FORMAT:
             modal.style.display = 'flex';
             const container = document.getElementById('measure-pages-container');
             const resultDiv = document.getElementById('measure-result');
-            
+
             container.innerHTML = '';
             resultDiv.textContent = "";
 
@@ -2312,15 +2316,15 @@ MANDATORY FORMAT:
                 const pdfjs = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
                 const arrayBuffer = await file.arrayBuffer();
                 currentPdfDoc = await pdfjs.getDocument(arrayBuffer).promise;
-                
-                container.innerHTML = ''; 
+
+                container.innerHTML = '';
                 const numPages = currentPdfDoc.numPages;
                 const scale = 1.5; // Tăng tỷ lệ để nhìn rõ hơn
-                
+
                 for (let i = 1; i <= numPages; i++) {
                     const page = await currentPdfDoc.getPage(i);
                     const viewport = page.getViewport({ scale: scale });
-                    
+
                     const pageWrapper = document.createElement('div');
                     pageWrapper.className = 'pdf-page-wrapper';
                     pageWrapper.style.position = 'relative';
@@ -2330,7 +2334,7 @@ MANDATORY FORMAT:
                     pageWrapper.style.borderRadius = '2px';
                     pageWrapper.style.display = 'inline-block';
                     pageWrapper.style.maxWidth = '100%';
-                    
+
                     const canvas = document.createElement('canvas');
                     const context = canvas.getContext('2d');
                     canvas.width = viewport.width;
@@ -2338,14 +2342,14 @@ MANDATORY FORMAT:
                     canvas.style.display = 'block';
                     canvas.style.maxWidth = '100%';
                     canvas.style.height = 'auto'; // Tự động theo tỷ lệ
-                    
+
                     const renderContext = {
                         canvasContext: context,
                         viewport: viewport
                     };
-                    
+
                     pageWrapper.appendChild(canvas);
-                    
+
                     const overlay = document.createElement('div');
                     overlay.style.position = 'absolute';
                     overlay.style.top = '0';
@@ -2355,16 +2359,16 @@ MANDATORY FORMAT:
                     overlay.style.cursor = 'crosshair';
                     overlay.style.zIndex = '5';
                     overlay.title = `Nhấp để lấy tọa độ Trang ${i}`;
-                    
+
                     overlay.onclick = (e) => {
                         const rect = overlay.getBoundingClientRect();
                         const y = e.clientY - rect.top;
-                        
+
                         // Tính toán tỷ lệ thực tế giữa hiển thị (rect) và PDF points
                         const displayHeight = rect.height;
                         const pointsYFromBottom = ((displayHeight - y) / displayHeight) * (viewport.height / scale);
                         const pointsYFromTop = (y / displayHeight) * (viewport.height / scale);
-                        
+
                         const showFooter = pointsYFromBottom <= pointsYFromTop;
                         resultDiv.innerHTML = `
                             <div style="font-weight:700; color:var(--primary); margin-bottom:8px; font-size:1.1rem;">Đang đo: Trang ${i}</div>
@@ -2383,9 +2387,9 @@ MANDATORY FORMAT:
                             </div>
                         `;
                     };
-                    
+
                     pageWrapper.appendChild(overlay);
-                    
+
                     // Thêm số trang góc trên bên trái
                     const pageNumBadge = document.createElement('div');
                     pageNumBadge.textContent = `P.${i}`;
@@ -2402,17 +2406,17 @@ MANDATORY FORMAT:
                     pageWrapper.appendChild(pageNumBadge);
 
                     container.appendChild(pageWrapper);
-                    
+
                     await page.render(renderContext).promise;
                 }
-                
+
                 // Lắng nghe sự kiện cuộn để hiển thị trang hiện tại
                 const updatePageIndicator = () => {
                     const wrappers = container.querySelectorAll('.pdf-page-wrapper');
                     let currentPage = 1;
                     let maxVisible = 0;
                     const containerRect = container.getBoundingClientRect();
-                    
+
                     wrappers.forEach((wrapper, index) => {
                         const rect = wrapper.getBoundingClientRect();
                         // Tính diện tích hiển thị của trang trong khung nhìn
@@ -2426,7 +2430,7 @@ MANDATORY FORMAT:
                 };
 
                 container.onscroll = updatePageIndicator;
-                
+
                 // Gọi lần đầu để cập nhật trạng thái ngay lập tức
                 updatePageIndicator();
             } catch (err) {
@@ -2457,21 +2461,33 @@ MANDATORY FORMAT:
     </script>
 
     <!-- Measure Modal Overlay -->
-    <div id="measure-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:10000; overflow:hidden; align-items:center; justify-content:center; padding:10px;">
-        <div style="background:var(--card-bg); width:98%; height:98%; border-radius:20px; position:relative; box-shadow: 0 40px 100px rgba(0,0,0,0.6); display:flex; flex-direction:column; overflow:hidden; border: 1px solid rgba(255,255,255,0.05);">
-            <button onclick="closeMeasureModal()" style="position:absolute; top:20px; right:25px; background:rgba(255,255,255,0.1); border:none; width:45px; height:45px; border-radius:50%; font-size:1.6rem; cursor:pointer; color:white; display:flex; align-items:center; justify-content:center; z-index:100; transition:all 0.3s;" onmouseover="this.style.background='#ef4444'; this.style.transform='rotate(90deg)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='rotate(0deg)'">&times;</button>
-            
-            <div style="padding:15px 30px; border-bottom:1px solid var(--card-border); text-align:center; background:rgba(0,0,0,0.3); position:relative;">
-                <h3 style="font-size:1.5rem; margin-bottom:5px; color:var(--primary); font-weight:700;"><i class="fa-solid fa-ruler-combined"></i> THƯỚC ĐO TỌA ĐỘ PDF</h3>
-                <div id="modal-page-info" style="position:absolute; bottom:15px; left:30px; color:var(--text-muted); font-size:0.85rem; font-weight:500; background:rgba(255,255,255,0.05); padding:4px 12px; border-radius:20px;">Trang 1 / ...</div>
-                <p style="color:var(--text-muted); font-size:0.9rem;">Nhấp vào vị trí Header/Footer để xem khoảng cách Points chính xác.</p>
+    <div id="measure-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:10000; overflow:hidden; align-items:center; justify-content:center; padding:10px;">
+        <div
+            style="background:var(--card-bg); width:98%; height:98%; border-radius:20px; position:relative; box-shadow: 0 40px 100px rgba(0,0,0,0.6); display:flex; flex-direction:column; overflow:hidden; border: 1px solid rgba(255,255,255,0.05);">
+            <button onclick="closeMeasureModal()"
+                style="position:absolute; top:20px; right:25px; background:rgba(255,255,255,0.1); border:none; width:45px; height:45px; border-radius:50%; font-size:1.6rem; cursor:pointer; color:white; display:flex; align-items:center; justify-content:center; z-index:100; transition:all 0.3s;"
+                onmouseover="this.style.background='#ef4444'; this.style.transform='rotate(90deg)'"
+                onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='rotate(0deg)'">&times;</button>
+
+            <div
+                style="padding:15px 30px; border-bottom:1px solid var(--card-border); text-align:center; background:rgba(0,0,0,0.3); position:relative;">
+                <h3 style="font-size:1.5rem; margin-bottom:5px; color:var(--primary); font-weight:700;"><i
+                        class="fa-solid fa-ruler-combined"></i> THƯỚC ĐO TỌA ĐỘ PDF</h3>
+                <div id="modal-page-info"
+                    style="position:absolute; bottom:15px; left:30px; color:var(--text-muted); font-size:0.85rem; font-weight:500; background:rgba(255,255,255,0.05); padding:4px 12px; border-radius:20px;">
+                    Trang 1 / ...</div>
+                <p style="color:var(--text-muted); font-size:0.9rem;">Nhấp vào vị trí Header/Footer để xem khoảng cách
+                    Points chính xác.</p>
             </div>
-            
-            <div id="measure-pages-container" style="flex:1; overflow-y:auto; padding:30px; background:rgba(0,0,0,0.2); display:flex; flex-direction:column; align-items:center; scroll-behavior: smooth;">
+
+            <div id="measure-pages-container"
+                style="flex:1; overflow-y:auto; padding:30px; background:rgba(0,0,0,0.2); display:flex; flex-direction:column; align-items:center; scroll-behavior: smooth;">
                 <!-- PDF Pages will be rendered here -->
             </div>
-            
-            <div id="measure-result" style="padding:20px; background:var(--card-bg); border-top:1px solid var(--card-border); min-height:130px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; box-shadow: 0 -15px 40px rgba(0,0,0,0.3);">
+
+            <div id="measure-result"
+                style="padding:20px; background:var(--card-bg); border-top:1px solid var(--card-border); min-height:130px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; box-shadow: 0 -15px 40px rgba(0,0,0,0.3);">
             </div>
         </div>
     </div>
