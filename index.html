@@ -527,9 +527,28 @@
             box-shadow: 0 0 0 2px var(--highlight-bg) !important;
         }
 
+        /* Highlight cho chế độ Chọn để Copy */
+        .hover-sentence.selection-hover {
+            background-color: rgba(16, 185, 129, 0.2) !important;
+            cursor: cell !important;
+        }
+
+        .hover-sentence.pinned-selection {
+            background-color: rgba(16, 185, 129, 0.5) !important;
+            color: white !important;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.7) !important;
+            border-radius: 4px;
+        }
+
+        /* Hỗ trợ copy công thức MathJax dễ dàng hơn */
+        mjx-container {
+            user-select: all !important;
+            cursor: text !important;
+        }
+
         .bilingual-box.marked {
-            background: rgba(16, 185, 129, 0.15);
-            border-color: rgba(16, 185, 129, 0.4);
+            background: rgba(16, 185, 129, 0.08) !important;
+            border-color: rgba(16, 185, 129, 0.3) !important;
         }
 
         .mark-web-btn {
@@ -546,6 +565,41 @@
 
         .mark-web-btn:hover {
             background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .copy-web-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            border: 1px solid var(--card-border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            margin-left: 8px;
+        }
+
+        .copy-web-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .copy-mini-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            float: right;
+            transition: 0.2s;
+        }
+
+        .copy-mini-btn:hover {
+            background: var(--primary);
             color: white;
         }
 
@@ -746,7 +800,18 @@
                     <div>
                         <button id="highlight-web-toggle"
                             style="background: none; border: none; color: #fbbf24; cursor: pointer; font-size: 1.1rem; margin-right: 15px; transition: color 0.2s;"
-                            title="Bật/Tắt Highlight Câu"><i class="fa-solid fa-lightbulb"></i></button>
+                            title="Bật/Tắt Highlight Song Ngữ"><i class="fa-solid fa-lightbulb"></i></button>
+
+                        <button id="selection-mode-toggle"
+                            style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; margin-right: 15px; transition: color 0.2s;"
+                            title="Chế độ Chọn để Copy"><i class="fa-solid fa-crosshairs"></i></button>
+
+                        <button id="copy-pinned-btn"
+                            style="display: none; background: #10b981; border: none; color: white; cursor: pointer; font-size: 0.9rem; padding: 5px 12px; border-radius: 20px; margin-right: 15px; font-weight: 600; transition: all 0.2s;"
+                            onclick="copyPinnedSegment()">
+                            <i class="fa-regular fa-copy"></i> Copy Đã Chọn
+                        </button>
+
                         <span id="progress-text"
                             style="color: var(--text-muted); font-size: 0.9rem; margin-right: 10px;">0%</span>
                         <button onclick="toggleFullscreen()" id="fullscreen-btn"
@@ -770,7 +835,7 @@
                             dừng</span>
                     </button>
                     <button class="btn-success" id="download-btn" onclick="downloadBilingual()"
-                        style="flex: 2; margin-top: 0;">
+                        style="flex: 1; display: none; margin-top: 0;">
                         <i class="fa-solid fa-download"></i> Tải xuống
                     </button>
                 </div>
@@ -814,19 +879,23 @@
 
         function togglePause() {
             isPaused = !isPaused;
-            const pauseBtn = document.getElementById('pause-btn');
-            const pauseText = document.getElementById('pause-text');
-            const icon = pauseBtn.querySelector('i');
+            const btn = document.getElementById('pause-btn');
+            const text = document.getElementById('pause-text');
+            const icon = btn.querySelector('i');
+            const downloadBtn = document.getElementById('download-btn');
             const statusText = document.getElementById('status-text');
 
             if (isPaused) {
-                pauseText.textContent = "Tiếp tục";
-                icon.className = "fa-solid fa-play";
+                text.textContent = 'Tiếp tục';
+                icon.className = 'fa-solid fa-play';
                 statusText.innerHTML = '<i class="fa-solid fa-circle-pause"></i> Đã tạm dừng dịch thuật';
+                // Hiện nút tải xuống ngay khi tạm dừng để người dùng lấy file sớm
+                downloadBtn.style.display = 'flex';
             } else {
-                pauseText.textContent = "Tạm dừng";
-                icon.className = "fa-solid fa-pause";
+                text.textContent = 'Tạm dừng';
+                icon.className = 'fa-solid fa-pause';
                 statusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tiếp tục dịch...';
+                // Ẩn nếu chưa hoàn thành (thực tế nút vẫn có thể hiển thị nếu muốn cho phép tải từng phần)
             }
         }
 
@@ -897,75 +966,9 @@
             checkGeminiAuth();
         }
 
-        function checkGeminiAuth() {
-            const key = localStorage.getItem('gemini_api_key');
-            const status = document.getElementById('auth-status');
-            const input = document.getElementById('gemini-key');
-            const logoutBtn = document.getElementById('logout-btn');
-
-            if (key) {
-                status.innerHTML = '<i class="fa-solid fa-circle-check"></i> Đã đăng nhập';
-                status.style.color = 'var(--success)';
-                input.value = key;
-                logoutBtn.style.display = 'inline-block';
-            } else {
-                status.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Chưa đăng nhập';
-                status.style.color = '#ef4444';
-                input.value = '';
-                logoutBtn.style.display = 'none';
-            }
-        }
-
-        // Khởi tạo kiểm tra Auth nếu tải lại trang
-        document.addEventListener('DOMContentLoaded', () => {
-            if (typeof toggleGeminiAuth === 'function') toggleGeminiAuth();
-
-            // Hover synchronization for sentences
-            const outputDiv = document.getElementById('bilingual-output');
-            if (outputDiv) {
-                outputDiv.addEventListener('mouseover', (e) => {
-                    if (!isHighlightEnabled) return;
-                    const target = e.target.closest('.hover-sentence');
-                    if (target) {
-                        const idx = target.getAttribute('data-idx');
-                        const box = target.closest('.bilingual-box');
-                        if (box && idx !== null) {
-                            box.querySelectorAll(`.hover-sentence[data-idx="${idx}"]`).forEach(el => {
-                                el.classList.add('highlight');
-                            });
-                        }
-                    }
-                });
-
-                outputDiv.addEventListener('mouseout', (e) => {
-                    if (!isHighlightEnabled) return;
-                    const target = e.target.closest('.hover-sentence');
-                    if (target) {
-                        const idx = target.getAttribute('data-idx');
-                        const box = target.closest('.bilingual-box');
-                        if (box && idx !== null) {
-                            box.querySelectorAll(`.hover-sentence[data-idx="${idx}"]`).forEach(el => {
-                                el.classList.remove('highlight');
-                            });
-                        }
-                    }
-                });
-            }
-        });
-
+        let isSelectionMode = false;
         let isHighlightEnabled = true;
-
-        function toggleWebMark(btn) {
-            const box = btn.closest('.bilingual-box');
-            box.classList.toggle('marked');
-            if (box.classList.contains('marked')) {
-                btn.classList.add('active');
-                btn.innerHTML = '✅ Đã đọc';
-            } else {
-                btn.classList.remove('active');
-                btn.innerHTML = 'Đánh dấu đã đọc';
-            }
-        }
+        let pinnedElements = []; // Chuyển sang mảng để hỗ trợ chọn nhiều đoạn cùng lúc
 
         document.addEventListener('DOMContentLoaded', () => {
             const highlightBtn = document.getElementById('highlight-web-toggle');
@@ -982,7 +985,154 @@
                     }
                 });
             }
+
+            // Chế độ Chọn để Copy
+            const selectionToggle = document.getElementById('selection-mode-toggle');
+            if (selectionToggle) {
+                selectionToggle.addEventListener('click', function () {
+                    isSelectionMode = !isSelectionMode;
+                    if (isSelectionMode) {
+                        this.style.color = '#10b981';
+                        this.title = "Đang bật chế độ Chọn để Copy (Nhấp để ghim)";
+                    } else {
+                        this.style.color = 'var(--text-muted)';
+                        this.title = "Chế độ Chọn để Copy";
+                        clearPinned();
+                    }
+                });
+            }
+
+            const outputDiv = document.getElementById('bilingual-output');
+            if (outputDiv) {
+                outputDiv.addEventListener('mouseover', (e) => {
+                    const target = e.target.closest('.hover-sentence');
+                    if (!target) return;
+
+                    if (isSelectionMode) {
+                        target.classList.add('selection-hover');
+                    }
+
+                    if (isHighlightEnabled) {
+                        const idx = target.getAttribute('data-idx');
+                        const box = target.closest('.bilingual-box');
+                        if (box && idx !== null) {
+                            box.querySelectorAll(`.hover-sentence[data-idx="${idx}"]`).forEach(el => {
+                                el.classList.add('highlight');
+                            });
+                        }
+                    }
+                });
+
+                outputDiv.addEventListener('mouseout', (e) => {
+                    const target = e.target.closest('.hover-sentence');
+                    if (!target) return;
+
+                    target.classList.remove('selection-hover');
+
+                    const idx = target.getAttribute('data-idx');
+                    const box = target.closest('.bilingual-box');
+                    if (box && idx !== null) {
+                        box.querySelectorAll(`.hover-sentence[data-idx="${idx}"]`).forEach(el => {
+                            el.classList.remove('highlight');
+                        });
+                    }
+                });
+
+                outputDiv.addEventListener('click', (e) => {
+                    if (!isSelectionMode) return;
+                    const target = e.target.closest('.hover-sentence');
+                    if (target) {
+                        const index = pinnedElements.indexOf(target);
+                        if (index > -1) {
+                            // Nếu đã chọn rồi thì bỏ chọn (Toggle off)
+                            target.classList.remove('pinned-selection');
+                            pinnedElements.splice(index, 1);
+                        } else {
+                            // Nếu chưa chọn thì thêm vào danh sách
+                            target.classList.add('pinned-selection');
+                            pinnedElements.push(target);
+                        }
+
+                        // Hiện/ẩn nút copy tùy thuộc có đoạn nào được chọn không
+                        const copyBtn = document.getElementById('copy-pinned-btn');
+                        if (pinnedElements.length > 0) {
+                            copyBtn.style.display = 'inline-block';
+                            copyBtn.innerHTML = `<i class="fa-regular fa-copy"></i> Copy ${pinnedElements.length} đoạn đã chọn`;
+                        } else {
+                            copyBtn.style.display = 'none';
+                        }
+                    }
+                });
+            }
         });
+
+        function clearPinned() {
+            pinnedElements.forEach(el => el.classList.remove('pinned-selection'));
+            pinnedElements = [];
+            const copyBtn = document.getElementById('copy-pinned-btn');
+            if (copyBtn) {
+                copyBtn.style.display = 'none';
+                copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy Đã Chọn';
+            }
+        }
+
+        async function copyPinnedSegment() {
+            if (pinnedElements.length === 0) return;
+
+            let fullTextToCopy = "";
+
+            // Duyệt qua tất cả các đoạn đã chọn
+            for (let el of pinnedElements) {
+                const box = el.closest('.bilingual-box');
+                const boxId = box.id;
+                const index = parseInt(boxId.replace('web-box-', ''));
+                const data = bilingualResults[index];
+                const idxInBox = parseInt(el.getAttribute('data-idx'));
+
+                let text = "";
+                if (data) {
+                    const isSource = el.closest('.source-container');
+                    const fullText = isSource ? data.source : data.target;
+                    const sentences = fullText.match(/.*?[.!?](?=\s+\p{Lu}|\s*$)|.+/gsu) || [fullText];
+                    text = sentences[idxInBox] || el.innerText;
+                } else {
+                    text = el.innerText;
+                }
+
+                fullTextToCopy += (fullTextToCopy ? " " : "") + text.trim();
+            }
+
+            try {
+                const htmlVersion = await convertToMathML(fullTextToCopy);
+                await navigator.clipboard.write([
+                    new ClipboardItem({
+                        'text/plain': new Blob([fullTextToCopy], { type: 'text/plain' }),
+                        'text/html': new Blob([htmlVersion], { type: 'text/html' })
+                    })
+                ]);
+
+                // Hiệu ứng hoàn tất
+                const btn = document.getElementById('copy-pinned-btn');
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Đã chép!';
+                setTimeout(() => {
+                    clearPinned(); // Xóa highlight sau khi copy xong
+                }, 1500);
+            } catch (err) {
+                alert("Lỗi khi copy!");
+            }
+        }
+
+        function toggleWebMark(btn) {
+            const box = btn.closest('.bilingual-box');
+            box.classList.toggle('marked');
+            if (box.classList.contains('marked')) {
+                btn.classList.add('active');
+                btn.innerHTML = '✅ Đã đọc';
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = 'Đánh dấu đã đọc';
+            }
+        }
 
         function wrapSentences(text) {
             if (!text) return '';
@@ -1233,19 +1383,17 @@
             window.currentApiKeyIndex++;
 
             const langMap = { 'en': 'English', 'vi': 'Vietnamese', 'auto': 'the native target language' };
-            const sourceMap = { 'en': 'English', 'vi': 'Vietnamese', 'auto': 'the original' };
             const targetLang = langMap[tl] || tl;
-            const sourceLang = sourceMap[sl] || 'the original';
             const systemPrompt = `You are a world-class academic translator and LaTeX expert.
 TASK: 
-1. Repair ${sourceLang === 'the original' ? 'the original' : 'the ' + sourceLang} source text by converting math/variables into LaTeX $...$.
+1. Repair the English source text by converting math/variables into LaTeX $...$.
 2. Translate the text into ${targetLang} while preserving LaTeX.
 
 MANDATORY FORMAT:
 ---FIXED_SOURCE---
-(Repaired original text here)
+(English LaTeX)
 ---TRANSLATION---
-(Translated text here)`;
+(Translation LaTeX)`;
 
             const body = {
                 contents: [{ parts: [{ text: `Text to process:\n${text}` }] }],
@@ -1347,6 +1495,7 @@ MANDATORY FORMAT:
                 document.getElementById('pause-btn').style.display = 'flex';
                 document.getElementById('pause-text').textContent = "Tạm dừng";
                 document.getElementById('pause-btn').querySelector('i').className = "fa-solid fa-pause";
+                document.getElementById('download-btn').style.display = 'none';
 
                 for (let i = 0; i < chunks.length; i++) {
                     while (isPaused) {
@@ -1359,11 +1508,16 @@ MANDATORY FORMAT:
                     box.className = 'bilingual-box';
                     box.id = `web-box-${i}`;
                     box.innerHTML = `
-                        <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 10px;">
                             <button class="mark-web-btn" onclick="toggleWebMark(this)">Đánh dấu đã đọc</button>
+                            <button class="copy-web-btn" onclick="copyTranslation(this)" title="Sao chép toàn bộ bản dịch"><i class="fa-regular fa-copy"></i> Sao chép</button>
                         </div>
-                        <div class="source-text">${wrapSentences(sourceText)}</div>
-                        <div class="target-text"><span class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Đang phân tích và dịch...</span></div>
+                        <div class="source-container">
+                            <div class="source-text">${wrapSentences(sourceText)}</div>
+                        </div>
+                        <div class="target-container" style="margin-top: 10px;">
+                            <div class="target-text"><span class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Đang phân tích và dịch...</span></div>
+                        </div>
                     `;
                     outputDiv.appendChild(box);
                     outputDiv.scrollTop = outputDiv.scrollHeight;
@@ -1395,6 +1549,7 @@ MANDATORY FORMAT:
                             </button>
                         `;
                         console.error(`Lỗi tại chunk ${i}:`, err);
+                        document.getElementById('download-btn').style.display = 'flex';
                     }
 
                     // Lệnh bí mật từ AI: Nếu là câu rác (chỉ toàn bản quyền/bảng biểu), xóa nó khỏi giao diện luôn
@@ -1409,10 +1564,10 @@ MANDATORY FORMAT:
 
                             box.querySelector('.source-text').innerHTML = wrapSentences(fixedSource);
                             box.querySelector('.target-text').innerHTML = wrapSentences(translated);
-                            bilingualResults.push({ source: fixedSource, target: translated });
+                            bilingualResults[i] = { source: fixedSource, target: translated };
                         } else {
                             box.querySelector('.target-text').innerHTML = wrapSentences(targetText);
-                            bilingualResults.push({ source: sourceText, target: targetText });
+                            bilingualResults[i] = { source: sourceText, target: targetText };
                         }
 
                         // Render MathJax for the newly added content với một chút delay để DOM ổn định
@@ -1457,371 +1612,325 @@ MANDATORY FORMAT:
             const currentTheme = document.body.getAttribute('data-theme') || 'light';
 
             let htmlContent = `
-                <!DOCTYPE html>
-                <html lang="vi">
-                <head>
-                    <meta charset="utf-8">
-                    <title>Bản Dịch Song Ngữ</title>
-                    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-                    <!-- MathJax for rendering formulas -->
-                    <script>
-                        window.MathJax = {
-                            tex: {
-                                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                                displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                                processEscapes: true,
-                                processEnvironments: true
-                            },
-                            options: {
-                                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
-                                ignoreHtmlClass: 'tex2jax_ignore',
-                                processHtmlClass: 'tex2jax_process'
-                            }
-                        };
-                    <\/script>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <title>SciTranslate - Bản Dịch Song Ngữ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\\\(', '\\\\)']], displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']] },
+            options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'] }
+        };
+    <\/script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"><\/script>
     <style>
         :root {
-            --bg-color: #f1f5f9;
+            --bg-color: #f0fdfa;
             --text-main: #0f172a;
             --text-muted: #475569;
-            --primary: #4f46e5;
+            --primary: #0d9488;
+            --secondary: #2dd4bf;
             --card-bg: #ffffff;
-            --card-border: rgba(0, 0, 0, 0.08);
-            --box-bg: #ffffff;
+            --card-border: rgba(0, 0, 0, 0.06);
+            --nav-bg: rgba(255, 255, 255, 0.8);
             --highlight-bg: rgba(234, 179, 8, 0.4);
             --highlight-text: #000000;
         }
 
         body[data-theme="dark"] {
             --bg-color: #17a2b8;
-            --text-main: #f8fafc;
+            --text-main: #ffffff;
             --text-muted: #cffafe;
             --primary: #22d3ee;
+            --secondary: #67e8f9;
             --card-bg: #001f3f;
-            --card-border: rgba(255, 255, 255, 0.1);
-            --box-bg: #001f3f;
+            --card-border: rgba(255, 255, 255, 0.15);
+            --nav-bg: rgba(0, 31, 63, 0.85);
             --highlight-bg: rgba(234, 179, 8, 0.5);
             --highlight-text: #ffffff;
         }
 
-        .footer {
-            text-align: center;
-            margin-top: 60px;
-            padding: 30px 0;
-            border-top: 1px solid rgba(0, 0, 0, 0.08);
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            letter-spacing: 0.05em;
-        }
-
-        body[data-theme="dark"] .footer {
-            border-top-color: rgba(255, 255, 255, 0.15);
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Inter', sans-serif;
-            line-height: 1.6;
             background-color: var(--bg-color);
             color: var(--text-main);
-            padding: 40px 20px;
-            margin: 0;
-            padding-bottom: 100px;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        h2 {
-            text-align: center;
-            color: var(--text-main);
-            margin-bottom: 40px;
-            font-size: 2rem;
-            font-weight: 700;
-        }
-
-        .box {
-            background: var(--box-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            min-height: 100vh;
             transition: background-color 0.3s;
         }
 
-        .box.marked {
-            background: rgba(16, 185, 129, 0.15);
-            border-color: rgba(16, 185, 129, 0.4);
-        }
+        .ambient-light { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; overflow: hidden; }
+        .orb { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.4; animation: float 15s infinite alternate ease-in-out; }
+        .orb-1 { width: 500px; height: 500px; background: rgba(45, 212, 191, 0.2); top: -150px; left: -150px; }
+        .orb-2 { width: 400px; height: 400px; background: rgba(13, 148, 136, 0.1); bottom: -100px; right: -100px; animation-delay: -5s; }
+        @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(100px, 50px) scale(1.1); } }
 
-        .box-header {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 15px;
-        }
-
-        .mark-btn {
-            background: rgba(0, 0, 0, 0.05);
-            color: var(--text-muted);
-            border: 1px solid var(--card-border);
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-        }
-
-        .mark-btn:hover {
-            background: rgba(0, 0, 0, 0.1);
-            color: var(--text-main);
-        }
-
-        .mark-btn.active {
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
-            border-color: #10b981;
-        }
-
-        .source {
-            color: var(--text-muted);
-            margin-bottom: 15px;
-            font-size: 0.95rem;
-            padding-bottom: 15px;
-            border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
-        }
-
-        .target {
-            font-weight: 500;
-            color: var(--text-main);
-            font-size: 1.05rem;
-        }
-
-        .label {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .label.en {
-            background: rgba(71, 85, 105, 0.1);
-            color: var(--text-muted);
-        }
-
-        .label.vi {
-            background: rgba(79, 70, 229, 0.1);
-            color: var(--primary);
-        }
-
-        .hover-sentence {
-            transition: background-color 0.2s, color 0.2s;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .hover-sentence.highlight {
-            background-color: var(--highlight-bg) !important;
-            color: var(--highlight-text) !important;
-            box-shadow: 0 0 0 2px var(--highlight-bg) !important;
-        }
-
-        .fab-container {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            z-index: 1000;
-        }
-
-        .fab-btn {
-            background: rgba(255, 255, 255, 0.9);
+        nav {
+            padding: 15px 40px;
+            border-bottom: 1px solid var(--card-border);
+            background: var(--nav-bg);
             backdrop-filter: blur(10px);
-            border: 1px solid var(--card-border);
-            color: #d97706;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
+            position: sticky;
+            top: 0;
+            z-index: 100;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s;
-            font-size: 1.2rem;
         }
+        .logo { font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .logo-text { background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; position: relative; z-index: 1; }
+        .app-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        
+        .box { padding: 20px; margin-bottom: 25px; border-bottom: 1px solid var(--card-border); transition: 0.3s; }
+        .box:last-child { border-bottom: none; }
+        .box.marked { background: rgba(16, 185, 129, 0.08) !important; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3) !important; }
+        
+        .box-header { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px; }
+        .tool-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
+        .tool-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .tool-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        
+        .copy-btn { background: #10b981; color: white; border: none; padding: 6px 15px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: none; align-items: center; gap: 6px; }
+        .mark-btn { background: rgba(0,0,0,0.05); color: var(--text-muted); border: 1px solid var(--card-border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
+        body[data-theme="dark"] .mark-btn { background: rgba(255,255,255,0.05); }
+        .mark-btn.active { background: #10b981; color: white; border-color: #10b981; }
 
-        .fab-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 20px -3px rgba(0, 0, 0, 0.15);
-        }
+        .source { color: var(--text-muted); margin-bottom: 15px; font-size: 0.95rem; line-height: 1.6; }
+        .target { font-weight: 500; color: var(--text-main); font-size: 1.05rem; line-height: 1.6; }
+        .label { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
+        .label.en { background: rgba(71, 85, 105, 0.1); color: var(--text-muted); }
+        .label.vi { background: rgba(13, 148, 136, 0.1); color: var(--primary); }
 
-        .fab-btn.disabled {
-            color: var(--text-muted);
-        }
+        .hover-sentence { border-radius: 4px; transition: 0.2s; cursor: pointer; }
+        .hover-sentence.highlight { background: var(--highlight-bg) !important; color: var(--highlight-text) !important; }
+        .hover-sentence.selection-hover { background: rgba(16, 185, 129, 0.15) !important; }
+        .hover-sentence.pinned-selection { background: #10b981 !important; color: white !important; }
 
-        /* Dark mode overrides for specific elements in export */
-        body[data-theme="dark"] .mark-btn {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        body[data-theme="dark"] .fab-btn {
-            background: rgba(30, 41, 59, 0.9);
-            color: #fbbf24;
-        }
-        body[data-theme="dark"] .label.en {
-            background: rgba(148, 163, 184, 0.2);
-        }
-        body[data-theme="dark"] .label.vi {
-            background: rgba(99, 102, 241, 0.2);
-            color: #818cf8;
-        }
+        footer { text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.85rem; }
     </style>
-    </head>
+</head>
+<body data-theme="${currentTheme}">
+    <div class="ambient-light">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+    <nav>
+        <div class="logo">
+            <i class="fa-solid fa-language" style="color: var(--primary);"></i>
+            <span class="logo-text">SciTranslate Song Ngữ</span>
+            <span style="font-size: 0.5em; color: var(--text-muted); opacity: 0.7;">design by Phan Gia An</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <button id="highlight-toggle" class="tool-btn active" onclick="setMode('hl')" title="Bật/Tắt Highlight"><i class="fa-solid fa-lightbulb"></i></button>
+            <button id="selection-toggle" class="tool-btn" onclick="setMode('sel')" title="Chế độ Nhắm Copy"><i class="fa-solid fa-bullseye"></i></button>
+            <button id="copy-pinned-btn" class="copy-btn" onclick="copyPinned()"><i class="fa-regular fa-copy"></i> Copy Đã Nhắm</button>
+            <button id="theme-toggle" class="tool-btn" style="border-radius: 50%; width: 36px; height: 36px; justify-content: center;" onclick="toggleTheme()">
+                <i class="fa-solid fa-${currentTheme === 'dark' ? 'sun' : 'moon'}"></i>
+            </button>
+        </div>
+    </nav>
 
-    <body data-theme="${currentTheme}">
-        <div class="container">
-            <h2>Tài Liệu Dịch Thuật Song Ngữ</h2>
-            `;
+    <div class="container">
+        <div class="app-card">
+            <div style="margin-bottom: 30px; border-bottom: 1px solid var(--card-border); padding-bottom: 20px;">
+                <h1 style="font-size: 1.5rem;">Bản Dịch: ${originalName}</h1>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 5px;">Tài liệu đã được dịch thuật song ngữ bởi AI</p>
+            </div>
+            <div id="content-area">`;
 
             bilingualResults.forEach((item, index) => {
                 htmlContent += `
-            <div class="box" id="box-${index}">
-                <div class="box-header">
-                    <button class="mark-btn" onclick="toggleMark(this)">Đánh dấu đã đọc</button>
-                </div>
-                <div class="source">
-                    <div class="label en">Bản Gốc</div><br>
-                    ${wrapSentences(item.source)}
-                </div>
-                <div class="target">
-                    <div class="label vi">Bản Dịch</div><br>
-                    ${wrapSentences(item.target)}
-                </div>
-            </div>
-            `;
+                <div class="box" id="box-${index}">
+                    <div class="box-header">
+                        <button class="mark-btn" onclick="toggleMark(this)">Đánh dấu đã đọc</button>
+                        <button class="tool-btn" onclick="copyTranslation(${index}, this)" title="Sao chép toàn bộ bản dịch"><i class="fa-regular fa-copy"></i> Sao chép</button>
+                    </div>
+                    <div class="source">
+                        <div class="label en">Bản Gốc</div><br>
+                        <div class="source-text">${wrapSentences(item.source)}</div>
+                    </div>
+                    <div class="target">
+                        <div class="label vi">Bản Dịch</div><br>
+                        <div class="target-text">${wrapSentences(item.target)}</div>
+                    </div>
+                </div>`;
             });
 
             htmlContent += `
+            </div>
         </div>
+    </div>
+    <footer>© 2024 SciTranslate - Design by Phan Gia An</footer>
 
-        <div class="footer">
-            <i style="color: #6366f1; margin-right: 5px;">✦</i> SciTranslate Song Ng\u1EEF &mdash; design by <span
-                style="color: #818cf8; font-weight: 600;">Phan Gia An</span>
-        </div>
+    <script>
+        const docId = '${docId}';
+        const rawResults = ${JSON.stringify(bilingualResults).replace(/`/g, '\\`').replace(/\${/g, '\\${')};
+        let isHighlightEnabled = true;
+        let isSelectionMode = false;
+        let pinnedElements = [];
 
-        <div class="fab-container" style="display: flex; flex-direction: column; gap: 10px;">
-            <button class="fab-btn" id="fab-theme" title="Chuy\u1EC3n ch\u1EBF \u0111\u1ED9 S\u00E1ng/T\u1ED1i"
-                onclick="toggleTheme()">🌓</button>
-            <button class="fab-btn" id="fab-highlight" title="B\u1EADt/T\u1EAFt Highlight C\u00E2u"
-                onclick="toggleHighlight()">💡</button>
-        </div>
+        function toggleTheme() {
+            const body = document.body;
+            const current = body.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', next);
+            const icon = document.querySelector('#theme-toggle i');
+            icon.className = next === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        }
 
-        <script>
-                        let isHighlightEnabled = true;
+        function setMode(mode) {
+            if (mode === 'hl') {
+                isHighlightEnabled = !isHighlightEnabled;
+                document.getElementById('highlight-toggle').classList.toggle('active', isHighlightEnabled);
+                if (!isHighlightEnabled) document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+            } else {
+                isSelectionMode = !isSelectionMode;
+                document.getElementById('selection-toggle').classList.toggle('active', isSelectionMode);
+                if (!isSelectionMode) clearPinned();
+            }
+        }
 
-                        function toggleTheme() {
-                            const body = document.body;
-                            const currentTheme = body.getAttribute('data-theme') || 'light';
-                            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                            body.setAttribute('data-theme', newTheme);
-                        }
+        function clearPinned() {
+            pinnedElements.forEach(el => el.classList.remove('pinned-selection'));
+            pinnedElements = [];
+            document.getElementById('copy-pinned-btn').style.display = 'none';
+        }
 
-                        function toggleHighlight() {
-                            isHighlightEnabled = !isHighlightEnabled;
-                            const btn = document.getElementById('fab-highlight');
-                            if (isHighlightEnabled) {
-                                btn.classList.remove('disabled');
-                                btn.style.filter = 'grayscale(0%) opacity(100%)';
-                            } else {
-                                btn.classList.add('disabled');
-                                btn.style.filter = 'grayscale(100%) opacity(50%)';
-                                document.querySelectorAll('.hover-sentence.highlight').forEach(el => el.classList.remove('highlight'));
-                            }
-                        }
+        document.addEventListener('mouseover', e => {
+            const t = e.target.closest('.hover-sentence');
+            if (!t) return;
+            if (isSelectionMode) t.classList.add('selection-hover');
+            if (isHighlightEnabled) {
+                const idx = t.getAttribute('data-idx');
+                const box = t.closest('.box');
+                box.querySelectorAll('.hover-sentence[data-idx="' + idx + '"]').forEach(el => el.classList.add('highlight'));
+            }
+        });
 
-                        document.addEventListener('mouseover', (e) => {
-                            if (!isHighlightEnabled) return;
-                            const target = e.target.closest('.hover-sentence');
-                            if (target) {
-                                const idx = target.getAttribute('data-idx');
-                                const box = target.closest('.box');
-                                if (box && idx !== null) {
-                                    box.querySelectorAll('.hover-sentence[data-idx="' + idx + '"]').forEach(el => {
-                                        el.classList.add('highlight');
-                                    });
-                                }
-                            }
-                        });
+        document.addEventListener('mouseout', e => {
+            const t = e.target.closest('.hover-sentence');
+            if (!t) return;
+            t.classList.remove('selection-hover');
+            const idx = t.getAttribute('data-idx');
+            const box = t.closest('.box');
+            box.querySelectorAll('.hover-sentence[data-idx="' + idx + '"]').forEach(el => el.classList.remove('highlight'));
+        });
 
-                        document.addEventListener('mouseout', (e) => {
-                            if (!isHighlightEnabled) return;
-                            const target = e.target.closest('.hover-sentence');
-                            if (target) {
-                                const idx = target.getAttribute('data-idx');
-                                const box = target.closest('.box');
-                                if (box && idx !== null) {
-                                    box.querySelectorAll('.hover-sentence[data-idx="' + idx + '"]').forEach(el => {
-                                        el.classList.remove('highlight');
-                                    });
-                                }
-                            }
-                        });
+        document.addEventListener('click', e => {
+            if (!isSelectionMode) return;
+            const t = e.target.closest('.hover-sentence');
+            if (!t) return;
+            const idx = pinnedElements.indexOf(t);
+            if (idx > -1) {
+                t.classList.remove('pinned-selection');
+                pinnedElements.splice(idx, 1);
+            } else {
+                t.classList.add('pinned-selection');
+                pinnedElements.push(t);
+            }
+            const has = pinnedElements.length > 0;
+            const btn = document.getElementById('copy-pinned-btn');
+            btn.style.display = has ? 'inline-flex' : 'none';
+            if (has) btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy ' + pinnedElements.length + ' đoạn';
+        });
 
-                        const docId = '${docId}';
+        async function copyPinned() {
+            if (pinnedElements.length === 0) return;
+            
+            let fullText = "";
+            pinnedElements.forEach(el => {
+                const box = el.closest('.box');
+                const boxIndex = parseInt(box.id.replace('box-', ''));
+                const isSource = el.closest('.source');
+                const idxInBox = parseInt(el.getAttribute('data-idx'));
+                
+                const data = rawResults[boxIndex];
+                if (data) {
+                    const baseText = isSource ? data.source : data.target;
+                    const sentences = baseText.match(/.*?[.!?](?=\s+\p{Lu}|\s*$)|.+/gsu) || [baseText];
+                    fullText += (fullText ? " " : "") + (sentences[idxInBox] || el.innerText).trim();
+                } else {
+                    fullText += (fullText ? " " : "") + el.innerText.trim();
+                }
+            });
 
-                        document.addEventListener('DOMContentLoaded', () => {
-                            const savedMarks = localStorage.getItem(docId + '_marks');
-                            if (savedMarks) {
-                                try {
-                                    const markedIds = JSON.parse(savedMarks);
-                                    markedIds.forEach(id => {
-                                        const box = document.getElementById(id);
-                                        if (box) {
-                                            box.classList.add('marked');
-                                            const btn = box.querySelector('.mark-btn');
-                                            if (btn) {
-                                                btn.classList.add('active');
-                                                btn.innerHTML = '✅ Đã đọc';
-                                            }
-                                        }
-                                    });
-                                } catch(e) {}
-                            }
-                        });
+            try {
+                const htmlVersion = await convertToMathML(fullText);
+                await navigator.clipboard.write([
+                    new ClipboardItem({
+                        'text/plain': new Blob([fullText], { type: 'text/plain' }),
+                        'text/html': new Blob([htmlVersion], { type: 'text/html' })
+                    })
+                ]);
+                alert("Đã copy " + pinnedElements.length + " đoạn!");
+                clearPinned();
+            } catch(e) { alert("Lỗi copy!"); }
+        }
 
-                        function saveMarks() {
-                            const markedBoxes = document.querySelectorAll('.box.marked');
-                            const markedIds = Array.from(markedBoxes).map(b => b.id);
-                            localStorage.setItem(docId + '_marks', JSON.stringify(markedIds));
-                        }
+        async function copyTranslation(index, btn) {
+            const text = rawResults[index] ? rawResults[index].target : "";
+            if (!text) return;
+            try {
+                const htmlVersion = await convertToMathML(text);
+                await navigator.clipboard.write([
+                    new ClipboardItem({
+                        'text/plain': new Blob([text], { type: 'text/plain' }),
+                        'text/html': new Blob([htmlVersion], { type: 'text/html' })
+                    })
+                ]);
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Đã chép';
+                setTimeout(() => btn.innerHTML = original, 2000);
+            } catch(e) { alert("Lỗi copy!"); }
+        }
 
-                        function toggleMark(btn) {
-                            const box = btn.closest('.box');
-                            box.classList.toggle('marked');
-                            if (box.classList.contains('marked')) {
-                                btn.classList.add('active');
-                                btn.innerHTML = '✅ Đã đọc';
-                            } else {
-                                btn.classList.remove('active');
-                                btn.innerHTML = 'Đánh dấu đã đọc';
-                            }
-                            saveMarks();
-                        }
-                    <\/script>
-                </body>
-                </html>
-            `;
+        async function convertToMathML(text) {
+            if (!window.MathJax || !window.MathJax.tex2mmlPromise) return '<p>' + text + '</p>';
+            const parts = text.split(/(\\$.*?\\$)/g);
+            let res = "";
+            for (let p of parts) {
+                if (p.startsWith('$') && p.endsWith('$')) {
+                    try {
+                        let mml = await MathJax.tex2mmlPromise(p.slice(1, -1), { display: false });
+                        res += mml.replace(/>\\s+</g, '><').trim();
+                    } catch (e) { res += p; }
+                } else {
+                    res += p.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                }
+            }
+            return '<html><body><span style="font-family: \\'Times New Roman\\', serif; font-size: 13pt;">' + res + '</span></body></html>';
+        }
+
+        function toggleMark(btn) {
+            const box = btn.closest('.box');
+            box.classList.toggle('marked');
+            const is = box.classList.contains('marked');
+            btn.classList.toggle('active', is);
+            btn.innerHTML = is ? '✅ Đã đọc' : 'Đánh dấu đã đọc';
+            const marked = Array.from(document.querySelectorAll('.box.marked')).map(b => b.id);
+            localStorage.setItem(docId + '_marks', JSON.stringify(marked));
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const marks = JSON.parse(localStorage.getItem(docId + '_marks') || '[]');
+            marks.forEach(id => {
+                const box = document.getElementById(id);
+                if (box) {
+                    box.classList.add('marked');
+                    const btn = box.querySelector('.mark-btn');
+                    btn.classList.add('active');
+                    btn.innerHTML = '✅ Đã đọc';
+                }
+            });
+        });
+    <\/script>
+</body>
+</html>`;
 
             const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
             const url = URL.createObjectURL(blob);
@@ -1932,6 +2041,109 @@ MANDATORY FORMAT:
             document.getElementById('download-btn').style.display = 'none';
             document.getElementById('status-text').textContent = 'Đang xử lý...';
         }
+
+        async function copyTranslation(btn) {
+            const box = btn.closest('.bilingual-box');
+            const targetArea = box.querySelector('.target-text');
+            const boxId = box.id;
+            const index = parseInt(boxId.replace('web-box-', ''));
+
+            // Lấy text thuần túy (vẫn giữ nguyên mã LaTeX $...$) để dán vào Word
+            let textToCopy = "";
+            if (bilingualResults[index]) {
+                textToCopy = bilingualResults[index].target;
+            } else {
+                textToCopy = targetArea.innerText;
+            }
+
+            try {
+                // Tạo phiên bản HTML có chứa MathML để Word nhận diện công thức
+                const htmlVersion = await convertToMathML(textToCopy);
+
+                await navigator.clipboard.write([
+                    new ClipboardItem({
+                        'text/plain': new Blob([textToCopy], { type: 'text/plain' }),
+                        'text/html': new Blob([htmlVersion], { type: 'text/html' })
+                    })
+                ]);
+
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Đã chép';
+                btn.style.color = '#10b981';
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.style.color = '';
+                }, 2000);
+            } catch (err) {
+                console.error('Lỗi copy:', err);
+                alert('Không thể sao chép văn bản. Vui lòng thử lại.');
+            }
+        }
+
+        async function copySpecificText(btn, type) {
+            const box = btn.closest('.bilingual-box');
+            const index = parseInt(box.id.replace('web-box-', ''));
+            const data = bilingualResults[index];
+
+            let text = "";
+            if (data) {
+                text = type === 'source' ? data.source : data.target;
+            } else {
+                text = box.querySelector(`.${type}-text`).innerText;
+            }
+
+            try {
+                const htmlVersion = await convertToMathML(text);
+                await navigator.clipboard.write([
+                    new ClipboardItem({
+                        'text/plain': new Blob([text], { type: 'text/plain' }),
+                        'text/html': new Blob([htmlVersion], { type: 'text/html' })
+                    })
+                ]);
+
+                const originalText = btn.innerText;
+                btn.innerText = "Copied!";
+                btn.style.color = "#10b981";
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.style.color = "";
+                }, 1500);
+            } catch (err) {
+                alert("Lỗi khi copy!");
+            }
+        }
+
+        // Hàm chuyển đổi văn bản chứa LaTeX sang HTML có MathML để Word hiểu
+        async function convertToMathML(text) {
+            if (!window.MathJax || !window.MathJax.tex2mmlPromise) {
+                return `<p>${text}</p>`;
+            }
+
+            // Tách các đoạn LaTeX $...$
+            const parts = text.split(/(\$.*?\$)/g);
+            let htmlResult = "";
+
+            for (let part of parts) {
+                if (part.startsWith('$') && part.endsWith('$')) {
+                    const tex = part.slice(1, -1);
+                    try {
+                        // Bắt buộc dùng inline math (display: false) để không bị nhảy dòng
+                        let mml = await MathJax.tex2mmlPromise(tex, { display: false });
+                        // Loại bỏ các khoảng trắng/xuống dòng thừa trong mã MML
+                        mml = mml.replace(/>\s+</g, '><').trim();
+                        htmlResult += mml;
+                    } catch (e) {
+                        htmlResult += part;
+                    }
+                } else {
+                    // Giữ nguyên text nhưng escape các ký tự HTML cơ bản
+                    htmlResult += part.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                }
+            }
+            // Trả về HTML với font Times New Roman, cỡ chữ 13pt đúng chuẩn Word
+            return `<html><body><span style="font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.5;">${htmlResult}</span></body></html>`;
+        }
+
     </script>
 </body>
 
