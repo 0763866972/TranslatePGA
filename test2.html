@@ -2276,8 +2276,8 @@ MANDATORY FORMAT:
             const container = document.getElementById('measure-pages-container');
             const resultDiv = document.getElementById('measure-result');
             
-            container.innerHTML = '<div style="color:var(--text-muted); margin-top:50px; font-size:1.1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Đang chuẩn bị tài liệu...</div>';
-            resultDiv.textContent = "Đang khởi tạo...";
+            container.innerHTML = '';
+            resultDiv.textContent = "";
 
             try {
                 const pdfjs = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
@@ -2289,8 +2289,6 @@ MANDATORY FORMAT:
                 const scale = 1.5; // Tăng tỷ lệ để nhìn rõ hơn
                 
                 for (let i = 1; i <= numPages; i++) {
-                    resultDiv.textContent = `Đang nạp trang ${i} / ${numPages}...`;
-                    
                     const page = await currentPdfDoc.getPage(i);
                     const viewport = page.getViewport({ scale: scale });
                     
@@ -2441,7 +2439,6 @@ MANDATORY FORMAT:
             </div>
             
             <div id="measure-result" style="padding:20px; background:var(--card-bg); border-top:1px solid var(--card-border); min-height:130px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; box-shadow: 0 -15px 40px rgba(0,0,0,0.3);">
-                Vui lòng nhấp vào nội dung trang PDF ở trên...
             </div>
         </div>
     </div>
