@@ -1284,31 +1284,37 @@
                 if (!sentence) continue;
 
                 const lower = sentence.toLowerCase();
+                // BẢO VỆ ĐOẠN ABSTRACT VÀ METADATA: Không được lọc nếu chứa các từ khóa này
+                const isProtected = lower.includes('abstract') || lower.includes('index terms') || lower.includes('keywords');
 
                 // --- BỘ LỌC RÁC THÔNG MINH (Headers, Footers, Metadata) ---
-                if (lower.includes('translations and content mining')) continue;
-                if (lower.includes('republication/redistribution requires')) continue;
-                if (lower.includes('authorized licensed use limited to')) continue;
-                if (lower.includes('ieee.org/publications')) continue;
-                if (lower.match(/©|\(c\)/) && lower.includes('ieee')) continue;
-                if (lower.includes('0093-9994')) continue;
-                if (sentence.startsWith('http://') || sentence.startsWith('https://')) continue;
+                if (!isProtected) {
+                    if (lower.includes('translations and content mining')) continue;
+                    if (lower.includes('republication/redistribution requires')) continue;
+                    if (lower.includes('authorized licensed use limited to')) continue;
+                    if (lower.includes('ieee.org/publications')) continue;
+                    if (lower.match(/©|\(c\)/) && lower.includes('ieee')) continue;
+                    if (lower.includes('0093-9994')) continue;
+                    if (sentence.startsWith('http://') || sentence.startsWith('https://')) continue;
+                }
 
-                // Lọc số trang và DOI
-                if (lower.match(/^page\s*\d+/i)) continue;
-                if (lower.match(/^doi:?\s*10\.\d+/i)) continue;
-                if (lower.match(/^vol\.\s*\d+|^issue\s*\d+/i)) continue;
-                if (lower.match(/^issn\s*\d+/i)) continue;
+                // Lọc số trang và DOI (Chỉ lọc nếu không phải đoạn Abstract)
+                if (!isProtected) {
+                    if (lower.match(/^page\s*\d+/i)) continue;
+                    if (lower.match(/^doi:?\s*10\.\d+/i)) continue;
+                    if (lower.match(/^vol\.\s*\d+|^issue\s*\d+/i)) continue;
+                    if (lower.match(/^issn\s*\d+/i)) continue;
+                }
 
                 // Lọc con số trang đứng một mình (ví dụ: "6", "12", "iv")
                 if (sentence.length < 5 && lower.match(/^[0-9ivxldcm]+$/i)) continue;
 
-                // Lọc tên các nhà xuất bản và thông tin trích dẫn phổ biến thường nằm ở header/footer
                 const publishers = ['nature portfolio', 'science direct', 'elsevier', 'springer', 'mdpi', 'frontiers in', 'arxiv:', 'proceedings of', 'journal of', 'ieee transactions on', 'citation information:', 'accepted for publication', 'prior to final publication'];
-                if (publishers.some(p => lower.includes(p))) continue;
-
+                // Lọc tên các nhà xuất bản và thông tin trích dẫn (Chỉ lọc nếu chuỗi ngắn, tránh lọc nhầm Abstract)
+                if (publishers.some(p => lower.includes(p)) && sentence.length < 150 && !isProtected) continue;
+                
                 // Lọc các dòng chỉ chứa ngày tháng năm (thường là footer)
-                if (lower.match(/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/)) continue;
+                if (lower.match(/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/) && !isProtected) continue;
 
                 // --- BỘ LỌC DỮ LIỆU BẢNG BIỂU (TABLES) ---
                 const numCount = (sentence.match(/\d/g) || []).length;
@@ -1383,16 +1389,19 @@
             const apiKey = keyList[window.currentApiKeyIndex % keyList.length];
             window.currentApiKeyIndex++;
 
-            const langMap = { 'en': 'English', 'vi': 'Vietnamese', 'auto': 'the native target language' };
+            const langMap = { 'en': 'English', 'vi': 'Vietnamese' };
             const targetLang = langMap[tl] || tl;
+            const sourceLangText = langMap[sl] || (sl === 'auto' ? 'original' : sl);
             const systemPrompt = `You are a world-class academic translator and LaTeX expert.
 TASK: 
-1. Repair the English source text by converting math/variables into LaTeX $...$.
+1. Repair the ${sourceLangText} source text by converting math/variables into LaTeX $...$.
 2. Translate the text into ${targetLang} while preserving LaTeX.
 
 ABSOLUTE RULES:
-- You MUST translate EVERY SINGLE SENTENCE. Do not ignore "Index Terms", "Abstract", author names, or metadata.
-- If you leave the TRANSLATION section empty or skip parts, the system will fail. You MUST provide the full translation.
+- You MUST translate EVERY SINGLE SENTENCE.
+- DO NOT IGNORE "Abstract", "Index Terms", "Keywords", author names, or any metadata. 
+- You MUST provide the full translation for every part of the text provided.
+- If you leave the TRANSLATION section empty or skip parts, the system will fail.
 - Do NOT output [SKIP] under any circumstances.
 
 MANDATORY FORMAT:
@@ -1784,7 +1793,7 @@ MANDATORY FORMAT:
 
     <script>
         const docId = '${docId}';
-        const rawResults = ${JSON.stringify(bilingualResults).replace(/`/g, '\\`').replace(/\${/g, '\\${')};
+        const rawResults = ${JSON.stringify(bilingualResults).replace(/`/g, '\\`').replace(/\${/g, '\\${').replace(/<\/script>/gi, '<\\/script>')};
         let isHighlightEnabled = true;
         let isSelectionMode = false;
         let pinnedElements = [];
@@ -1867,7 +1876,7 @@ MANDATORY FORMAT:
                 const data = rawResults[boxIndex];
                 if (data) {
                     const baseText = isSource ? data.source : data.target;
-                    const sentences = baseText.match(/.*?[.!?](?=\s+\p{Lu}|\s*$)|.+/gsu) || [baseText];
+                    const sentences = baseText.match(/.*?[.!?](?=\\s+\\p{Lu}|\\s*$)|.+/gsu) || [baseText];
                     fullText += (fullText ? " " : "") + (sentences[idxInBox] || el.innerText).trim();
                 } else {
                     fullText += (fullText ? " " : "") + el.innerText.trim();
