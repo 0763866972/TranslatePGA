@@ -624,6 +624,23 @@
             border-color: #10b981;
         }
 
+        .page-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 35px 0 15px 0;
+            padding: 10px;
+            background: rgba(13, 148, 136, 0.08);
+            border: 1px dashed var(--primary);
+            border-radius: 8px;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            animation: fadeIn 0.3s ease;
+        }
+
         .bilingual-box {
             background: var(--box-bg);
             border: 1px solid var(--card-border);
@@ -1390,7 +1407,7 @@
 
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjs.getDocument(arrayBuffer).promise;
-            let fullText = '';
+            let pagesData = [];
 
             const targetPageVal = document.getElementById('target-page')?.value.trim();
             let pagesToProcess = [];
@@ -1558,11 +1575,39 @@
                         lastY = item.y;
                     }
                 }
-
-                // Dùng 1 dấu \n để nối trang, giúp câu bị đứt đoạn giữa 2 trang được nối liền lại
-                fullText += text + '\n';
+                pagesData.push({ pageNum: i, text: text });
             }
-            return fullText;
+
+            // Lọc bỏ phần References/Tài liệu tham khảo dựa trên toàn văn liên kết
+            let fullText = pagesData.map(p => p.text).join('\n');
+            const refRegex = /(?:\r?\n|^)\s*(?:\[?\d+\]?[\.\s]*|[IVXLCDM]+[\.\s]*)?(?:R\s*E\s*F\s*E\s*R\s*E\s*N\s*C\s*E\s*S?|B\s*I\s*B\s*L\s*I\s*O\s*G\s*R\s*A\s*P\s*H\s*Y|T\s*À\s*I\s*L\s*I\s*Ệ\s*U\s*T\s*H\s*A\s*M\s*K\s*H\s*Ả\s*O)\s*(?:\r?\n|$)/gi;
+            let match;
+            let lastRefIndex = -1;
+            while ((match = refRegex.exec(fullText)) !== null) {
+                if (match.index > fullText.length * 0.5) {
+                    lastRefIndex = match.index;
+                }
+            }
+            if (lastRefIndex !== -1) {
+                console.log("Đã tự động loại bỏ phần References.");
+                let currentLength = 0;
+                let truncatedPages = [];
+                for (let p of pagesData) {
+                    const nextLength = currentLength + p.text.length + 1; // +1 cho \n join
+                    if (lastRefIndex >= currentLength && lastRefIndex < nextLength) {
+                        const localIndex = lastRefIndex - currentLength;
+                        p.text = p.text.substring(0, localIndex);
+                        truncatedPages.push(p);
+                        break; // Bỏ tất cả các trang phía sau
+                    } else {
+                        truncatedPages.push(p);
+                    }
+                    currentLength = nextLength;
+                }
+                pagesData = truncatedPages;
+            }
+
+            return pagesData;
         }
 
         async function extractTextFromDocx(file) {
@@ -1815,7 +1860,6 @@ MANDATORY FORMAT:
 
             try {
                 statusText.textContent = "Đang đọc nội dung tệp (Trích xuất chữ)...";
-                let text = '';
                 const file = currentFile;
                 if (!file) throw new Error("Không tìm thấy tệp để xử lý.");
 
@@ -1823,22 +1867,32 @@ MANDATORY FORMAT:
                 const sl = document.getElementById('source-lang').value;
                 const tl = document.getElementById('target-lang').value;
 
-                if (ext === 'pdf') { text = await extractTextFromPDF(file); }
-                else if (ext === 'docx') { text = await extractTextFromDocx(file); }
+                let pagesData = [];
+                if (ext === 'pdf') {
+                    pagesData = await extractTextFromPDF(file);
+                } else if (ext === 'docx') {
+                    const docxText = await extractTextFromDocx(file);
+                    pagesData = [{ pageNum: null, text: docxText }];
+                }
 
                 statusText.textContent = "Đang phân tích và xử lý câu...";
-                // Gom nhóm 1000 ký tự để chia nhỏ đoạn song ngữ dễ đọc theo đúng ý bạn
                 const maxLength = 1000;
-                const chunks = chunkText(text, maxLength);
+                let chunks = [];
+
+                for (let page of pagesData) {
+                    const pageChunks = chunkText(page.text, maxLength);
+                    for (let cText of pageChunks) {
+                        chunks.push({
+                            pageNum: page.pageNum,
+                            text: cText
+                        });
+                    }
+                }
 
                 if (chunks.length === 0) {
                     statusText.textContent = "Tệp không có văn bản nào có thể đọc được!";
                     return;
                 }
-
-                statusText.textContent = isGemini
-                    ? `✨ AI ${engine.includes('pro') ? 'Pro' : 'Flash'} đang tiến hành dịch thuật hàn lâm`
-                    : "🌐 Google đang tiến hành dịch trực tiếp";
 
                 isPaused = false;
                 document.getElementById('pause-btn').style.display = 'flex';
@@ -1853,7 +1907,23 @@ MANDATORY FORMAT:
                         await new Promise(r => setTimeout(r, 500));
                     }
 
-                    let sourceText = chunks[i];
+                    let sourceText = chunks[i].text;
+                    let pageNum = chunks[i].pageNum;
+
+                    // Cập nhật trạng thái dịch kèm thông tin trang đang xử lý
+                    const pageInfoStr = pageNum ? ` [Trang ${pageNum}/${totalPdfPages || '?'}]` : '';
+                    statusText.innerHTML = isGemini
+                        ? `✨ AI ${engine.includes('pro') ? 'Pro' : 'Flash'} đang tiến hành dịch... ${pageInfoStr}`
+                        : `🌐 Google đang dịch... ${pageInfoStr}`;
+
+                    // Hiển thị dải phân cách trang khi bắt đầu trang mới
+                    let prevPageNum = i > 0 ? chunks[i - 1].pageNum : null;
+                    if (pageNum !== null && pageNum !== prevPageNum) {
+                        const divider = document.createElement('div');
+                        divider.className = 'page-divider';
+                        divider.innerHTML = `<i class="fa-solid fa-file-invoice"></i> TRANG ${pageNum} / ${totalPdfPages || '?'}`;
+                        outputDiv.appendChild(divider);
+                    }
 
                     // Làm sạch trước các ký tự ô vuông hỏng cho tất cả các bản dịch
                     sourceText = cleanUnprintableChars(sourceText);
@@ -1869,7 +1939,7 @@ MANDATORY FORMAT:
                     box.innerHTML = `
                         <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 10px;">
                             <button class="mark-web-btn" onclick="toggleWebMark(this)">Đánh dấu đã đọc</button>
-                            <button class="copy-web-btn" onclick="copyTranslation(this)" title="Sao chép toàn bộ bản dịch"><i class="fa-regular fa-copy"></i> Sao chép</button>
+                            <button class="copy-web-btn" onclick="copyTranslation(${i}, this)" title="Sao chép toàn bộ bản dịch"><i class="fa-regular fa-copy"></i> Sao chép</button>
                         </div>
                         <div class="source-container">
                             <div class="source-text">${wrapSentences(sourceText)}</div>
@@ -1891,7 +1961,6 @@ MANDATORY FORMAT:
                             let modelStr = engine;
                             let waitTime = 4000;
                             const keysCount = Math.max(1, (localStorage.getItem('gemini_api_key') || '').split(',').filter(k => k.trim()).length);
-
 
                             targetText = await translateGemini(sourceText, sl === 'auto' ? 'auto' : sl, tl, 0, modelStr);
 
@@ -1920,7 +1989,7 @@ MANDATORY FORMAT:
                         // Fallback siêu mạnh: Nếu trống hoàn toàn hoặc AI skip, dùng luôn bản gốc
                         box.querySelector('.source-text').innerHTML = wrapSentences(sourceText);
                         box.querySelector('.target-text').innerHTML = wrapSentences(sourceText);
-                        bilingualResults[i] = { source: sourceText, target: sourceText };
+                        bilingualResults[i] = { source: sourceText, target: sourceText, pageNum: pageNum };
                     } else {
                         // Xử lý kết quả từ Gemini (có chứa FIXED_SOURCE)
                         if (targetText.includes('---TRANSLATION---')) {
@@ -1933,10 +2002,10 @@ MANDATORY FORMAT:
 
                             box.querySelector('.source-text').innerHTML = wrapSentences(fixedSource);
                             box.querySelector('.target-text').innerHTML = wrapSentences(translated);
-                            bilingualResults[i] = { source: fixedSource, target: translated };
+                            bilingualResults[i] = { source: fixedSource, target: translated, pageNum: pageNum };
                         } else {
                             box.querySelector('.target-text').innerHTML = wrapSentences(targetText);
-                            bilingualResults[i] = { source: sourceText, target: targetText };
+                            bilingualResults[i] = { source: sourceText, target: targetText, pageNum: pageNum };
                         }
 
                         // Tự động cuộn lại sau khi văn bản được điền vào (vì lúc này box sẽ phình to ra)
@@ -2091,6 +2160,27 @@ MANDATORY FORMAT:
         .hover-sentence.pinned-selection { background: #10b981 !important; color: white !important; }
 
         footer { text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.85rem; }
+
+        .page-divider-download {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 40px 0 20px 0;
+            padding: 12px;
+            background: rgba(13, 148, 136, 0.06);
+            border: 1px dashed var(--primary);
+            border-radius: 8px;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+        }
+        body[data-theme="dark"] .page-divider-download {
+            background: rgba(34, 211, 238, 0.06);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
     </style>
 </head>
 <body data-theme="${currentTheme}">
@@ -2122,7 +2212,15 @@ MANDATORY FORMAT:
             </div>
             <div id="content-area">`;
 
+            let lastPageNum = null;
             bilingualResults.forEach((item, index) => {
+                if (item.pageNum !== null && item.pageNum !== lastPageNum) {
+                    htmlContent += `
+                    <div class="page-divider-download">
+                        <i class="fa-solid fa-file-invoice"></i> TRANG ${item.pageNum}
+                    </div>`;
+                    lastPageNum = item.pageNum;
+                }
                 htmlContent += `
                 <div class="box" id="box-${index}">
                     <div class="box-header">
@@ -2350,6 +2448,8 @@ MANDATORY FORMAT:
 
             targetArea.innerHTML = `<span class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Đang thử lại...</span>`;
 
+            const oldPageNum = bilingualResults[index] ? bilingualResults[index].pageNum : null;
+
             try {
                 let targetText = '';
                 if (isGemini) {
@@ -2361,7 +2461,7 @@ MANDATORY FORMAT:
                 if (!targetText || !targetText.trim() || targetText.trim() === '[SKIP]') {
                     box.querySelector('.source-text').innerHTML = wrapSentences(sourceText);
                     targetArea.innerHTML = wrapSentences(sourceText);
-                    bilingualResults[index] = { source: sourceText, target: sourceText };
+                    bilingualResults[index] = { source: sourceText, target: sourceText, pageNum: oldPageNum };
                 } else if (targetText.includes('---TRANSLATION---')) {
                     const parts = targetText.split('---TRANSLATION---');
                     const fixedSource = parts[0].replace('---FIXED_SOURCE---', '').trim();
@@ -2372,10 +2472,10 @@ MANDATORY FORMAT:
                     box.querySelector('.source-text').innerHTML = wrapSentences(fixedSource);
                     targetArea.innerHTML = wrapSentences(translated);
                     // Update results array
-                    bilingualResults[index] = { source: fixedSource, target: translated };
+                    bilingualResults[index] = { source: fixedSource, target: translated, pageNum: oldPageNum };
                 } else {
                     targetArea.innerHTML = wrapSentences(targetText);
-                    bilingualResults[index] = { source: sourceText, target: targetText };
+                    bilingualResults[index] = { source: sourceText, target: targetText, pageNum: oldPageNum };
                 }
 
                 // Render MathJax
