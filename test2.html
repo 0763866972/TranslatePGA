@@ -1744,7 +1744,8 @@
             const langMap = { 'en': 'English', 'vi': 'Vietnamese' };
             const targetLang = langMap[tl] || tl;
             const sourceLangText = langMap[sl] || (sl === 'auto' ? 'original' : sl);
-            const systemPrompt = `You are a world-class academic translator and LaTeX expert.
+            
+            let systemPrompt = `You are a world-class academic translator and LaTeX expert.
 TASK: 
 1. Repair the ${sourceLangText} source text by converting math/variables into LaTeX $...$.
 2. Translate the text into ${targetLang} while preserving LaTeX.
@@ -1754,7 +1755,31 @@ ABSOLUTE RULES:
 - DO NOT IGNORE "Abstract", "Index Terms", "Keywords", author names, or any metadata. 
 - You MUST provide the full translation for every part of the text provided.
 - If you leave the TRANSLATION section empty or skip parts, the system will fail.
-- Do NOT output [SKIP] under any circumstances.
+- Do NOT output [SKIP] under any circumstances.`;
+
+            if (tl === 'en') {
+                systemPrompt += `
+
+ACADEMIC WRITING STYLE INSTRUCTIONS (Directly inspired by "English for Writing Research Papers" by Adrian Wallwork):
+As the target language is English, you MUST apply these strict academic style rules to ensure a journal-ready publication standard:
+1. CLARITY & BREVITY: Keep sentences short, simple, and direct. The average sentence length should be 15–20 words. Absolutely break up long sentences (over 25 words) into two or more independent, clear sentences.
+2. ACTIVE VOICE: Use active voice when describing the authors' actions, decisions, and findings (e.g., write "We calculated the optimal values using..." instead of "The optimal values were calculated by us using...", "We observed that..." instead of "It was observed that...").
+3. AVOID NOMINALIZATION: Avoid using nouns where a verb is much more direct and powerful (e.g., use "analyze" instead of "conduct an analysis", "evaluate" instead of "perform an evaluation", "improve" instead of "achieve improvement").
+4. AVOID REDUNDANCY & WORDINESS: Eliminate empty filler phrases. Replace wordy clauses with simple, high-impact alternatives:
+   - "due to the fact that" -> "because"
+   - "in spite of the fact that" / "notwithstanding the fact that" -> "although"
+   - "in order to" -> "to"
+   - "at the present time" -> "now" or "currently"
+   - "with the exception of" -> "except"
+   - "utilize" / "make use of" -> "use"
+   - "demonstrate" / "showcase" -> "show" or "present"
+5. DIRECT SENTENCE STRUCTURE: Place the subject and the verb as close as possible to the beginning of the sentence. Avoid starting with long introductory adverbial clauses or passive filler introductory phrases like "It is important to note that..." or "It is interesting to point out that...". Start directly with the core message.
+6. NO NOUN STACKING: Avoid stringing three or more nouns together (e.g., instead of "air pollution control system efficiency", write "efficiency of the air pollution control system").
+7. PRECISE WORD CHOICE: Avoid vague words like "very", "extremely", "highly", "bad", "nice". Replace them with exact quantitative metrics or more professional academic descriptors.
+8. LATEX INTEGRITY: Preserve all LaTeX formulas, mathematical terms ($...$, $$...$$, equations) exactly as they are. Make sure the English grammar flows naturally around the mathematical placeholders.`;
+            }
+
+            systemPrompt += `
 
 MANDATORY FORMAT:
 ---FIXED_SOURCE---
