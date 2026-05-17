@@ -733,6 +733,7 @@
                     <select class="lang-select" id="engine-select" onchange="toggleEngine()">
                         <option value="google">🌐 Google Translate (Dịch siêu tốc, Không cần Key)</option>
                         <option value="gemini-3.1-flash-lite">✨ Gemini 3.1 Flash Lite (Tối ưu cho Toán học)</option>
+                        <option value="google-doc">📄 Google Documents (Dịch nguyên file & Giữ định dạng)</option>
                     </select>
                 </div>
 
@@ -770,6 +771,25 @@
                         <button type="button" class="btn btn-outline" id="logout-btn" onclick="logoutGemini()"
                             style="display: none; padding: 8px 15px; border-radius: 6px; border: 1px solid var(--secondary); background: transparent; color: var(--secondary); cursor: pointer; font-weight: 500;">Xóa
                             toàn bộ Key</button>
+                    </div>
+                </div>
+
+                <!-- Google Translate Document Instruction -->
+                <div class="google-doc-auth" id="google-doc-key-box"
+                    style="display: none; background: rgba(26, 115, 232, 0.05); border: 1px dashed #1a73e8; border-radius: 12px; padding: 20px; margin-bottom: 20px; animation: fadeIn 0.3s ease forwards;">
+                    <label style="color: #1a73e8; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <i class="fa-solid fa-file-pdf"></i> Dịch file giữ nguyên bố cục (Google Documents)
+                    </label>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6;">
+                        Chức năng này sẽ tự động chuyển hướng bạn sang trang dịch thuật tài liệu chính thức của Google Translate với các tùy chọn ngôn ngữ đã chọn sẵn.
+                    </p>
+                    <ul style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 15px; margin-left: 20px; line-height: 1.6;">
+                        <li><strong>Dịch toàn tệp tin:</strong> Hỗ trợ .pdf, .docx, .pptx, .xlsx hoàn toàn miễn phí.</li>
+                        <li><strong>Bảo toàn bố cục:</strong> Bản dịch sẽ xuất ra file PDF/Word có vị trí hình ảnh, font chữ giống hệt bản gốc.</li>
+                        <li><strong>Không cần API Key:</strong> Dịch trực tiếp từ hệ thống của Google không lo hết hạn ngạch.</li>
+                    </ul>
+                    <div style="font-size: 0.8rem; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 8px; border-left: 3px solid #1a73e8; color: var(--text-muted);">
+                        <i class="fa-solid fa-circle-info"></i> <strong>Hướng dẫn:</strong> Bấm nút <strong>"Mở Google Translate Documents"</strong> bên dưới. Khi trang mới mở ra, bạn chỉ cần tải tệp lên và bấm <strong>"Dịch" (Translate)</strong>.
                     </div>
                 </div>
 
@@ -836,7 +856,7 @@
                     </select>
                 </div>
 
-                <button class="btn-primary" onclick="startTranslation()">
+                <button class="btn-primary" id="translate-btn" onclick="startTranslation()">
                     <i class="fa-solid fa-play"></i> Bắt đầu Trích xuất & Dịch
                 </button>
             </div>
@@ -961,7 +981,12 @@
         function toggleEngine() {
             const engine = document.getElementById('engine-select').value;
             const geminiBox = document.getElementById('gemini-key-box');
-            const isGemini = engine !== 'google';
+            const googleDocBox = document.getElementById('google-doc-key-box');
+            const filterControls = document.querySelector('.filter-controls');
+            const translateBtn = document.getElementById('translate-btn');
+            
+            const isGemini = engine.startsWith('gemini');
+            const isGoogleDoc = engine === 'google-doc';
 
             if (isGemini) {
                 geminiBox.style.display = 'block';
@@ -982,6 +1007,22 @@
                 renderApiKeyInputs();
             } else {
                 geminiBox.style.display = 'none';
+            }
+
+            if (isGoogleDoc) {
+                if (googleDocBox) googleDocBox.style.display = 'block';
+                if (filterControls) filterControls.style.display = 'none';
+                if (translateBtn) {
+                    translateBtn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Mở Google Translate Documents';
+                    translateBtn.style.background = 'linear-gradient(135deg, #1a73e8, #4285f4)';
+                }
+            } else {
+                if (googleDocBox) googleDocBox.style.display = 'none';
+                if (filterControls) filterControls.style.display = 'block';
+                if (translateBtn) {
+                    translateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Bắt đầu Trích xuất & Dịch';
+                    translateBtn.style.background = '';
+                }
             }
         }
 
@@ -1570,7 +1611,16 @@ MANDATORY FORMAT:
         async function startTranslation() {
             const myTranslationId = ++currentTranslationId;
             const engine = document.getElementById('engine-select').value;
-            const isGemini = engine !== 'google';
+            
+            if (engine === 'google-doc') {
+                const sl = document.getElementById('source-lang').value;
+                const tl = document.getElementById('target-lang').value;
+                const url = `https://translate.google.com/?op=docs&sl=${sl}&tl=${tl}`;
+                window.open(url, '_blank');
+                return;
+            }
+
+            const isGemini = engine.startsWith('gemini');
 
             if (isGemini) {
                 const key = localStorage.getItem('gemini_api_key');
@@ -2113,7 +2163,7 @@ MANDATORY FORMAT:
             const box = document.getElementById(boxId);
             const targetArea = box.querySelector('.target-text');
             const engine = document.getElementById('engine-select').value;
-            const isGemini = engine !== 'google';
+            const isGemini = engine.startsWith('gemini');
             const sl = document.getElementById('source-lang').value;
             const tl = document.getElementById('target-lang').value;
 

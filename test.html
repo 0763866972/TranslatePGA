@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SciTranslate - Dịch Song Ngữ với Gemini AI</title>
+    <title>SciTranslate</title>
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔬</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -704,7 +704,7 @@
 
     <div class="container">
         <header>
-            <h1 style="display: inline-block;">Dịch Báo Khoa Học<br>Sang Song Ngữ</h1>
+            <h1 style="display: inline-block;">Dịch Báo Khoa Học<br>Song Ngữ</h1>
         </header>
 
         <div class="app-card">
@@ -776,23 +776,49 @@
                 <!-- Filter Settings -->
                 <div class="filter-controls"
                     style="margin-bottom: 20px; background: var(--box-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--card-border);">
-                    <label class="form-label" style="margin-bottom: 10px;">✂️ Bộ Lọc Header/Footer</label>
-                    <div style="display: flex; flex-direction: column; gap: 15px;">
-                        <div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                <label for="margin-filter" style="font-size: 0.9rem; color: var(--text-muted);">Khoảng
-                                    cách lề (points): <span id="margin-value"
-                                        style="font-weight: 600; color: var(--primary);">40</span></label>
+                    <label class="form-label" style="margin-bottom: 12px;">✂️ Bộ Lọc Header/Footer</label>
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label for="header-filter"
+                                style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Lề
+                                Trên (Header)</label>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="number" id="header-filter" min="0" max="300" value="35"
+                                    style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-weight: 600;">
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">pts</span>
                             </div>
-                            <input type="range" id="margin-filter" min="0" max="150" value="40" style="width: 100%;"
-                                oninput="document.getElementById('margin-value').innerText = this.value">
                         </div>
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <label for="dash-filter" style="font-size: 0.9rem; color: var(--text-muted);">Lọc dòng kẻ
-                                ngang (---- / ____)</label>
-                            <input type="checkbox" id="dash-filter" checked style="width: 18px; height: 18px;">
+                        <div style="flex: 1;">
+                            <label for="footer-filter"
+                                style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Lề
+                                Dưới (Footer)</label>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="number" id="footer-filter" min="0" max="300" value="35"
+                                    style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-weight: 600;">
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">pts</span>
+                            </div>
                         </div>
                     </div>
+
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px; padding-top: 10px; border-top: 1px dashed var(--card-border);">
+                        <label for="target-page"
+                            style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">🎯 Chỉ dịch trang
+                            số:</label>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <input type="text" id="target-page" placeholder="Tất cả"
+                                style="width: 70px; padding: 6px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); text-align: center;">
+                            <button type="button" onclick="document.getElementById('target-page').value=''"
+                                style="background: rgba(255,255,255,0.1); border: 1px solid var(--card-border); color: var(--text-muted); font-size: 0.75rem; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s;"
+                                onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.color='white'"
+                                onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.color='var(--text-muted)'">Tất
+                                cả</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-outline" onclick="openMeasureTool()"
+                        style="font-size: 0.85rem; padding: 8px; border-style: dashed; width: 100%; margin-top: 5px;">
+                        <i class="fa-solid fa-ruler-combined"></i> Mở thước đo & Chọn trang
+                    </button>
                 </div>
 
                 <!-- Language Selection -->
@@ -897,6 +923,7 @@
         const liveArea = document.getElementById('live-area');
         const outputDiv = document.getElementById('bilingual-output');
 
+        let currentFile = null;
         let bilingualResults = [];
         let isPaused = false;
         let currentTranslationId = 0;
@@ -1222,18 +1249,27 @@
             e.preventDefault(); e.stopPropagation();
             dropZone.classList.remove('highlight');
             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                const dt = new DataTransfer();
-                dt.items.add(e.dataTransfer.files[0]);
-                fileInput.files = dt.files;
+                currentFile = e.dataTransfer.files[0];
+                // Đồng bộ hóa với fileInput để hiển thị đúng trong UI nếu cần
+                try {
+                    fileInput.files = e.dataTransfer.files;
+                } catch (err) {
+                    console.log("Không thể gán files trực tiếp, tiếp tục với currentFile.");
+                }
                 handleFile();
             }
         });
 
-        fileInput.addEventListener('change', handleFile);
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files && fileInput.files.length > 0) {
+                currentFile = fileInput.files[0];
+                handleFile();
+            }
+        });
 
-        function handleFile() {
-            if (!fileInput.files || fileInput.files.length === 0) return;
-            const file = fileInput.files[0];
+        async function handleFile() {
+            const file = currentFile;
+            if (!file) return;
             const ext = file.name.split('.').pop().toLowerCase();
 
             if (ext === 'doc') { alert('Hệ thống chỉ hỗ trợ định dạng DOCX mới. File DOC cũ sẽ không đọc được, vui lòng lưu lại (Save As) thành DOCX nhé.'); return; }
@@ -1243,6 +1279,28 @@
             document.getElementById('file-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
             document.getElementById('file-icon').className = ext === 'pdf' ? 'fa-solid fa-file-pdf' : 'fa-solid fa-file-word';
             document.getElementById('file-icon').style.color = ext === 'pdf' ? '#ef4444' : '#3b82f6';
+
+            // Cập nhật giới hạn trang cho PDF
+            if (ext === 'pdf') {
+                try {
+                    const pdfjs = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjs.getDocument(arrayBuffer).promise;
+                    const input = document.getElementById('target-page');
+                    if (input) {
+                        input.max = pdf.numPages;
+                        input.placeholder = `1-${pdf.numPages}`;
+                    }
+                } catch (err) {
+                    console.error("Lỗi khi đọc PDF để lấy số trang:", err);
+                }
+            } else {
+                const input = document.getElementById('target-page');
+                if (input) {
+                    input.removeAttribute('max');
+                    input.placeholder = "Tất cả";
+                }
+            }
 
             dropZone.style.display = 'none';
             settingsArea.style.display = 'block';
@@ -1256,13 +1314,37 @@
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjs.getDocument(arrayBuffer).promise;
             let fullText = '';
-            for (let i = 1; i <= pdf.numPages; i++) {
+
+            const targetPageVal = document.getElementById('target-page')?.value.trim();
+            let pagesToProcess = [];
+
+            if (targetPageVal) {
+                if (targetPageVal.includes('-')) {
+                    const parts = targetPageVal.split('-');
+                    const s = parseInt(parts[0]);
+                    const e = parseInt(parts[1]);
+                    if (!isNaN(s) && !isNaN(e)) {
+                        const start = Math.max(1, Math.min(s, e));
+                        const end = Math.min(pdf.numPages, Math.max(s, e));
+                        for (let p = start; p <= end; p++) pagesToProcess.push(p);
+                    }
+                } else {
+                    const p = parseInt(targetPageVal);
+                    if (!isNaN(p)) pagesToProcess.push(p);
+                }
+            } else {
+                for (let p = 1; p <= pdf.numPages; p++) pagesToProcess.push(p);
+            }
+
+            for (let i of pagesToProcess) {
+                if (i > pdf.numPages || i < 1) continue;
                 const page = await pdf.getPage(i);
                 const textContent = await page.getTextContent();
                 const viewport = page.getViewport({ scale: 1.0 });
                 const pageHeight = viewport.height;
 
-                const marginThreshold = parseInt(document.getElementById('margin-filter')?.value || '40');
+                const headerThreshold = parseInt(document.getElementById('header-filter')?.value || '35');
+                const footerThreshold = parseInt(document.getElementById('footer-filter')?.value || '35');
 
                 let lastY = -1;
                 let text = '';
@@ -1271,18 +1353,20 @@
 
                     // BỘ LỌC THÔNG MINH DỰA TRÊN TỌA ĐỘ Y (Khoảng cách vật lý)
                     // Bỏ qua các dòng text nằm sát mép trên (Header) hoặc mép dưới (Footer) của trang
-                    if (y < marginThreshold || y > pageHeight - marginThreshold) {
+                    if (y < footerThreshold || y > pageHeight - headerThreshold) {
                         continue;
                     }
 
-                    if (lastY == -1 || Math.abs(y - lastY) > 5) {
+                    if (lastY == -1) {
+                        text += item.str;
+                    } else if (Math.abs(y - lastY) > 5) {
                         text += '\n' + item.str;
                     } else {
                         text += item.str;
                     }
                     lastY = y;
                 }
-                // Dùng 1 khoảng trắng (hoặc 1 dấu \n) để nối trang, giúp câu bị đứt đoạn giữa 2 trang liền mạch lại
+                // Dùng 1 dấu \n để nối trang, giúp câu bị đứt đoạn giữa 2 trang được regex xử lý nối liền lại
                 fullText += text + '\n';
             }
             return fullText;
@@ -1331,9 +1415,8 @@
                 // BẢO VỆ ĐOẠN ABSTRACT VÀ METADATA: Không được lọc nếu chứa các từ khóa này
                 const isProtected = lower.includes('abstract') || lower.includes('index terms') || lower.includes('keywords');
 
-                // Lọc dòng kẻ ngang nếu được bật
-                const dashFilterChecked = document.getElementById('dash-filter') ? document.getElementById('dash-filter').checked : true;
-                if (dashFilterChecked && lower.length >= 3 && lower.replace(/\s/g, '').match(/^[-_—=]+$/)) {
+                // Lọc dòng kẻ ngang (Mặc định bật)
+                if (lower.length >= 3 && lower.replace(/\s/g, '').match(/^[-_—=]+$/)) {
                     continue;
                 }
 
@@ -1507,14 +1590,16 @@ MANDATORY FORMAT:
             bilingualResults = [];
             isUserScrollingUp = false;
 
-            const file = fileInput.files[0];
-            const ext = file.name.split('.').pop().toLowerCase();
-            const sl = document.getElementById('source-lang').value;
-            const tl = document.getElementById('target-lang').value;
-
             try {
                 statusText.textContent = "Đang đọc nội dung tệp (Trích xuất chữ)...";
                 let text = '';
+                const file = currentFile;
+                if (!file) throw new Error("Không tìm thấy tệp để xử lý.");
+
+                const ext = file.name.split('.').pop().toLowerCase();
+                const sl = document.getElementById('source-lang').value;
+                const tl = document.getElementById('target-lang').value;
+
                 if (ext === 'pdf') { text = await extractTextFromPDF(file); }
                 else if (ext === 'docx') { text = await extractTextFromDocx(file); }
 
@@ -1786,7 +1871,7 @@ MANDATORY FORMAT:
         <div class="logo">
             <i class="fa-solid fa-language" style="color: var(--primary);"></i>
             <span class="logo-text">SciTranslate Song Ngữ</span>
-            <span style="font-size: 0.5em; color: var(--text-muted); opacity: 0.7;">design by Phan Gia An</span>
+            <span style="font-size: 0.45em; font-weight: 400; color: var(--text-muted); margin-left: -8px; transform: translateY(5px); opacity: 0.7;">design by Phan Gia An</span>
         </div>
         <div style="display: flex; align-items: center; gap: 15px;">
             <button id="highlight-toggle" class="tool-btn active" onclick="setMode('hl')" title="Bật/Tắt Highlight"><i class="fa-solid fa-lightbulb"></i></button>
@@ -2209,7 +2294,203 @@ MANDATORY FORMAT:
             return `<html><body><span style="font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.5;">${htmlResult}</span></body></html>`;
         }
 
+        // --- MEASURE TOOL ---
+        let currentPdfDoc = null;
+
+        async function openMeasureTool() {
+            const file = currentFile;
+            if (!file || file.name.split('.').pop().toLowerCase() !== 'pdf') {
+                alert("Vui lòng tải lên file PDF trước khi sử dụng thước đo!");
+                return;
+            }
+
+            const modal = document.getElementById('measure-modal');
+            modal.style.display = 'flex';
+            const container = document.getElementById('measure-pages-container');
+            const resultDiv = document.getElementById('measure-result');
+
+            container.innerHTML = '';
+            resultDiv.textContent = "";
+
+            try {
+                const pdfjs = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+                const arrayBuffer = await file.arrayBuffer();
+                currentPdfDoc = await pdfjs.getDocument(arrayBuffer).promise;
+
+                container.innerHTML = '';
+                const numPages = currentPdfDoc.numPages;
+                const scale = 1.5; // Tăng tỷ lệ để nhìn rõ hơn
+
+                for (let i = 1; i <= numPages; i++) {
+                    const page = await currentPdfDoc.getPage(i);
+                    const viewport = page.getViewport({ scale: scale });
+
+                    const pageWrapper = document.createElement('div');
+                    pageWrapper.className = 'pdf-page-wrapper';
+                    pageWrapper.style.position = 'relative';
+                    pageWrapper.style.boxShadow = '0 15px 45px rgba(0,0,0,0.4)';
+                    pageWrapper.style.backgroundColor = 'white';
+                    pageWrapper.style.marginBottom = '40px';
+                    pageWrapper.style.borderRadius = '2px';
+                    pageWrapper.style.display = 'inline-block';
+                    pageWrapper.style.maxWidth = '100%';
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    canvas.style.display = 'block';
+                    canvas.style.maxWidth = '100%';
+                    canvas.style.height = 'auto'; // Tự động theo tỷ lệ
+
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
+
+                    pageWrapper.appendChild(canvas);
+
+                    const overlay = document.createElement('div');
+                    overlay.style.position = 'absolute';
+                    overlay.style.top = '0';
+                    overlay.style.left = '0';
+                    overlay.style.width = '100%';
+                    overlay.style.height = '100%';
+                    overlay.style.cursor = 'crosshair';
+                    overlay.style.zIndex = '5';
+                    overlay.title = `Nhấp để lấy tọa độ Trang ${i}`;
+
+                    overlay.onclick = (e) => {
+                        const rect = overlay.getBoundingClientRect();
+                        const y = e.clientY - rect.top;
+
+                        // Tính toán tỷ lệ thực tế giữa hiển thị (rect) và PDF points
+                        const displayHeight = rect.height;
+                        const pointsYFromBottom = ((displayHeight - y) / displayHeight) * (viewport.height / scale);
+                        const pointsYFromTop = (y / displayHeight) * (viewport.height / scale);
+
+                        const showFooter = pointsYFromBottom <= pointsYFromTop;
+                        resultDiv.innerHTML = `
+                            <div style="font-weight:700; color:var(--primary); margin-bottom:8px; font-size:1.1rem;">Đang đo: Trang ${i}</div>
+                            <div style="display:flex; justify-content:center; align-items:center;">
+                                ${showFooter ? `
+                                <div style="padding:12px 25px; background:rgba(67, 97, 238, 0.1); border-radius:10px; border:1px solid rgba(67, 97, 238, 0.2); min-width:250px;">
+                                    <span style="color:var(--text-muted); font-size:0.85rem; display:block; margin-bottom:4px;">Từ Dưới lên (Footer)</span>
+                                    <strong style="color:var(--primary); font-size:1.8rem;">${Math.round(pointsYFromBottom)} points</strong>
+                                </div>
+                                ` : `
+                                <div style="padding:12px 25px; background:rgba(239, 68, 68, 0.1); border-radius:10px; border:1px solid rgba(239, 68, 68, 0.2); min-width:250px;">
+                                    <span style="color:var(--text-muted); font-size:0.85rem; display:block; margin-bottom:4px;">Từ Trên xuống (Header)</span>
+                                    <strong style="color:#ef4444; font-size:1.8rem;">${Math.round(pointsYFromTop)} points</strong>
+                                </div>
+                                `}
+                            </div>
+                        `;
+                    };
+
+                    pageWrapper.appendChild(overlay);
+
+                    // Thêm số trang góc trên bên trái
+                    const pageNumBadge = document.createElement('div');
+                    pageNumBadge.textContent = `P.${i}`;
+                    pageNumBadge.style.position = 'absolute';
+                    pageNumBadge.style.top = '10px';
+                    pageNumBadge.style.left = '10px';
+                    pageNumBadge.style.background = 'rgba(0,0,0,0.6)';
+                    pageNumBadge.style.color = 'white';
+                    pageNumBadge.style.padding = '2px 8px';
+                    pageNumBadge.style.borderRadius = '4px';
+                    pageNumBadge.style.fontSize = '0.75rem';
+                    pageNumBadge.style.zIndex = '10';
+                    pageNumBadge.style.pointerEvents = 'none';
+                    pageWrapper.appendChild(pageNumBadge);
+
+                    container.appendChild(pageWrapper);
+
+                    await page.render(renderContext).promise;
+                }
+
+                // Lắng nghe sự kiện cuộn để hiển thị trang hiện tại
+                const updatePageIndicator = () => {
+                    const wrappers = container.querySelectorAll('.pdf-page-wrapper');
+                    let currentPage = 1;
+                    let maxVisible = 0;
+                    const containerRect = container.getBoundingClientRect();
+
+                    wrappers.forEach((wrapper, index) => {
+                        const rect = wrapper.getBoundingClientRect();
+                        // Tính diện tích hiển thị của trang trong khung nhìn
+                        const visibleHeight = Math.min(rect.bottom, containerRect.bottom) - Math.max(rect.top, containerRect.top);
+                        if (visibleHeight > maxVisible) {
+                            maxVisible = visibleHeight;
+                            currentPage = index + 1;
+                        }
+                    });
+                    document.getElementById('modal-page-info').textContent = `Đang ở trang: ${currentPage} / ${numPages}`;
+                };
+
+                container.onscroll = updatePageIndicator;
+
+                // Gọi lần đầu để cập nhật trạng thái ngay lập tức
+                updatePageIndicator();
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = `<div style="color:#ef4444; padding:50px; text-align:center;">
+                    <i class="fa-solid fa-triangle-exclamation fa-3x" style="margin-bottom:15px;"></i>
+                    <h3>Lỗi hiển thị</h3>
+                    <p>${err.message}</p>
+                </div>`;
+            }
+        }
+
+        function selectPageForImport(pageNum) {
+            const input = document.getElementById('target-page');
+            if (input) {
+                input.value = pageNum;
+                closeMeasureModal();
+                // Thông báo nhẹ nhàng
+                const statusText = document.getElementById('status-text');
+                if (statusText) statusText.textContent = `Đã chọn trang ${pageNum}. Nhấn nút Play để bắt đầu.`;
+            }
+        }
+
+        function closeMeasureModal() {
+            document.getElementById('measure-modal').style.display = 'none';
+        }
+
     </script>
+
+    <!-- Measure Modal Overlay -->
+    <div id="measure-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:10000; overflow:hidden; align-items:center; justify-content:center; padding:10px;">
+        <div
+            style="background:var(--card-bg); width:98%; height:98%; border-radius:20px; position:relative; box-shadow: 0 40px 100px rgba(0,0,0,0.6); display:flex; flex-direction:column; overflow:hidden; border: 1px solid rgba(255,255,255,0.05);">
+            <button onclick="closeMeasureModal()"
+                style="position:absolute; top:20px; right:25px; background:rgba(255,255,255,0.1); border:none; width:45px; height:45px; border-radius:50%; font-size:1.6rem; cursor:pointer; color:white; display:flex; align-items:center; justify-content:center; z-index:100; transition:all 0.3s;"
+                onmouseover="this.style.background='#ef4444'; this.style.transform='rotate(90deg)'"
+                onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='rotate(0deg)'">&times;</button>
+
+            <div
+                style="padding:15px 30px; border-bottom:1px solid var(--card-border); text-align:center; background:rgba(0,0,0,0.3); position:relative;">
+                <h3 style="font-size:1.5rem; margin-bottom:5px; color:var(--primary); font-weight:700;"><i
+                        class="fa-solid fa-ruler-combined"></i> THƯỚC ĐO TỌA ĐỘ PDF</h3>
+                <div id="modal-page-info"
+                    style="position:absolute; bottom:15px; left:30px; color:var(--text-muted); font-size:0.85rem; font-weight:500; background:rgba(255,255,255,0.05); padding:4px 12px; border-radius:20px;">
+                    Trang 1 / ...</div>
+                <p style="color:var(--text-muted); font-size:0.9rem;">Nhấp vào vị trí Header/Footer để xem khoảng cách
+                    Points chính xác.</p>
+            </div>
+
+            <div id="measure-pages-container"
+                style="flex:1; overflow-y:auto; padding:30px; background:rgba(0,0,0,0.2); display:flex; flex-direction:column; align-items:center; scroll-behavior: smooth;">
+                <!-- PDF Pages will be rendered here -->
+            </div>
+
+            <div id="measure-result"
+                style="padding:20px; background:var(--card-bg); border-top:1px solid var(--card-border); min-height:130px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; box-shadow: 0 -15px 40px rgba(0,0,0,0.3);">
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
