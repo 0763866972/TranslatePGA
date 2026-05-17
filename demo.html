@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SciTranslate - Dịch Song Ngữ với Gemini AI</title>
+    <title>SciTranslate</title>
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔬</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -338,6 +338,21 @@
             padding: 20px;
             margin-bottom: 20px;
             animation: fadeIn 0.3s ease forwards;
+        }
+
+        .get-key-link {
+            color: #eab308 !important;
+            /* Màu vàng sang trọng dễ nhìn */
+            text-decoration: underline;
+            margin-left: 6px;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+
+        .get-key-link:hover {
+            color: #facc15 !important;
+            /* Vàng sáng rực rỡ khi hover */
+            text-decoration: none;
         }
 
         .gemini-auth input {
@@ -704,7 +719,7 @@
 
     <div class="container">
         <header>
-            <h1 style="display: inline-block;">Dịch Báo Khoa Học<br>Sang Song Ngữ</h1>
+            <h1 style="display: inline-block;">Dịch Báo Khoa Học<br>Song Ngữ</h1>
         </header>
 
         <div class="app-card">
@@ -733,6 +748,7 @@
                     <select class="lang-select" id="engine-select" onchange="toggleEngine()">
                         <option value="google">🌐 Google Translate (Dịch siêu tốc, Không cần Key)</option>
                         <option value="gemini-3.1-flash-lite">✨ Gemini 3.1 Flash Lite (Tối ưu cho Toán học)</option>
+                        <option value="google-doc">📄 Google Documents (Dịch nguyên file & Giữ định dạng)</option>
                     </select>
                 </div>
 
@@ -773,6 +789,91 @@
                     </div>
                 </div>
 
+                <!-- Google Translate Document Instruction -->
+                <div class="google-doc-auth" id="google-doc-key-box"
+                    style="display: none; background: rgba(26, 115, 232, 0.05); border: 1px dashed #1a73e8; border-radius: 12px; padding: 20px; margin-bottom: 20px; animation: fadeIn 0.3s ease forwards;">
+                    <label
+                        style="color: #1a73e8; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <i class="fa-solid fa-file-pdf"></i> Dịch file giữ nguyên bố cục (Google Documents)
+                    </label>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6;">
+                        Chức năng này sẽ tự động chuyển hướng bạn sang trang dịch thuật tài liệu chính thức của Google
+                        Translate với các tùy chọn ngôn ngữ đã chọn sẵn.
+                    </p>
+                    <ul
+                        style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 15px; margin-left: 20px; line-height: 1.6;">
+                        <li><strong>Dịch toàn tệp tin:</strong> Hỗ trợ .pdf, .docx, .pptx, .xlsx hoàn toàn miễn phí.
+                        </li>
+                        <li><strong>Bảo toàn bố cục:</strong> Bản dịch sẽ xuất ra file PDF/Word có vị trí hình ảnh, font
+                            chữ giống hệt bản gốc.</li>
+                        <li><strong>Không cần API Key:</strong> Dịch trực tiếp từ hệ thống của Google không lo hết hạn
+                            ngạch.</li>
+                    </ul>
+                    <div
+                        style="font-size: 0.8rem; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 8px; border-left: 3px solid #1a73e8; color: var(--text-muted);">
+                        <i class="fa-solid fa-circle-info"></i> <strong>Hướng dẫn:</strong> Bấm nút <strong>"Mở Google
+                            Translate Documents"</strong> bên dưới. Khi trang mới mở ra, bạn chỉ cần tải tệp lên và bấm
+                        <strong>"Dịch" (Translate)</strong>.
+                    </div>
+                </div>
+
+                <!-- Filter Settings -->
+                <div class="filter-controls"
+                    style="margin-bottom: 20px; background: var(--box-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--card-border);">
+                    <label class="form-label" style="margin-bottom: 12px;">✂️ Bộ Lọc Header/Footer</label>
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label for="header-filter"
+                                style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Lề
+                                Trên (Header)</label>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="number" id="header-filter" min="0" max="300" value="35"
+                                    style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-weight: 600;">
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">pts</span>
+                            </div>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="footer-filter"
+                                style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Lề
+                                Dưới (Footer)</label>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="number" id="footer-filter" min="0" max="300" value="35"
+                                    style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-weight: 600;">
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">pts</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Page Exceptions Section -->
+                    <div id="exception-container" style="margin-top: 5px;"></div>
+                    <button type="button" onclick="addExceptionRow()"
+                        style="background: transparent; border: 1px dashed var(--primary); color: var(--primary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; margin-top: 5px; margin-bottom: 12px; width: 100%; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;"
+                        onmouseover="this.style.background='rgba(13, 148, 136, 0.1)'"
+                        onmouseout="this.style.background='transparent'">
+                        <i class="fa-solid fa-plus-circle"></i> Thêm lề riêng cho trang đặc biệt
+                    </button>
+
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px; padding-top: 10px; border-top: 1px dashed var(--card-border);">
+                        <label for="target-page"
+                            style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">🎯 Chỉ dịch trang
+                            số:</label>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <input type="text" id="target-page" placeholder="Tất cả"
+                                style="width: 70px; padding: 6px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); text-align: center;">
+                            <button type="button" onclick="document.getElementById('target-page').value=''"
+                                style="background: rgba(255,255,255,0.1); border: 1px solid var(--card-border); color: var(--text-muted); font-size: 0.75rem; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s;"
+                                onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.color='white'"
+                                onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.color='var(--text-muted)'">Tất
+                                cả</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-outline" onclick="openMeasureTool()"
+                        style="font-size: 0.85rem; padding: 8px; border-style: dashed; width: 100%; margin-top: 5px;">
+                        <i class="fa-solid fa-ruler-combined"></i> Mở thước đo & Chọn trang
+                    </button>
+                </div>
+
                 <!-- Language Selection -->
                 <label class="form-label">🌍 Ngôn ngữ</label>
                 <div class="lang-group">
@@ -788,7 +889,7 @@
                     </select>
                 </div>
 
-                <button class="btn-primary" onclick="startTranslation()">
+                <button class="btn-primary" id="translate-btn" onclick="startTranslation()">
                     <i class="fa-solid fa-play"></i> Bắt đầu Trích xuất & Dịch
                 </button>
             </div>
@@ -875,6 +976,8 @@
         const liveArea = document.getElementById('live-area');
         const outputDiv = document.getElementById('bilingual-output');
 
+        let currentFile = null;
+        let totalPdfPages = 0;
         let bilingualResults = [];
         let isPaused = false;
         let currentTranslationId = 0;
@@ -912,7 +1015,12 @@
         function toggleEngine() {
             const engine = document.getElementById('engine-select').value;
             const geminiBox = document.getElementById('gemini-key-box');
-            const isGemini = engine !== 'google';
+            const googleDocBox = document.getElementById('google-doc-key-box');
+            const filterControls = document.querySelector('.filter-controls');
+            const translateBtn = document.getElementById('translate-btn');
+
+            const isGemini = engine.startsWith('gemini');
+            const isGoogleDoc = engine === 'google-doc';
 
             if (isGemini) {
                 geminiBox.style.display = 'block';
@@ -933,6 +1041,22 @@
                 renderApiKeyInputs();
             } else {
                 geminiBox.style.display = 'none';
+            }
+
+            if (isGoogleDoc) {
+                if (googleDocBox) googleDocBox.style.display = 'block';
+                if (filterControls) filterControls.style.display = 'none';
+                if (translateBtn) {
+                    translateBtn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Mở Google Translate Documents';
+                    translateBtn.style.background = 'linear-gradient(135deg, #1a73e8, #4285f4)';
+                }
+            } else {
+                if (googleDocBox) googleDocBox.style.display = 'none';
+                if (filterControls) filterControls.style.display = 'block';
+                if (translateBtn) {
+                    translateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Bắt đầu Trích xuất & Dịch';
+                    translateBtn.style.background = '';
+                }
             }
         }
 
@@ -1200,18 +1324,27 @@
             e.preventDefault(); e.stopPropagation();
             dropZone.classList.remove('highlight');
             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                const dt = new DataTransfer();
-                dt.items.add(e.dataTransfer.files[0]);
-                fileInput.files = dt.files;
+                currentFile = e.dataTransfer.files[0];
+                // Đồng bộ hóa với fileInput để hiển thị đúng trong UI nếu cần
+                try {
+                    fileInput.files = e.dataTransfer.files;
+                } catch (err) {
+                    console.log("Không thể gán files trực tiếp, tiếp tục với currentFile.");
+                }
                 handleFile();
             }
         });
 
-        fileInput.addEventListener('change', handleFile);
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files && fileInput.files.length > 0) {
+                currentFile = fileInput.files[0];
+                handleFile();
+            }
+        });
 
-        function handleFile() {
-            if (!fileInput.files || fileInput.files.length === 0) return;
-            const file = fileInput.files[0];
+        async function handleFile() {
+            const file = currentFile;
+            if (!file) return;
             const ext = file.name.split('.').pop().toLowerCase();
 
             if (ext === 'doc') { alert('Hệ thống chỉ hỗ trợ định dạng DOCX mới. File DOC cũ sẽ không đọc được, vui lòng lưu lại (Save As) thành DOCX nhé.'); return; }
@@ -1221,6 +1354,30 @@
             document.getElementById('file-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
             document.getElementById('file-icon').className = ext === 'pdf' ? 'fa-solid fa-file-pdf' : 'fa-solid fa-file-word';
             document.getElementById('file-icon').style.color = ext === 'pdf' ? '#ef4444' : '#3b82f6';
+
+            // Cập nhật giới hạn trang cho PDF
+            if (ext === 'pdf') {
+                try {
+                    const pdfjs = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjs.getDocument(arrayBuffer).promise;
+                    totalPdfPages = pdf.numPages; // Cập nhật số trang của PDF
+                    const input = document.getElementById('target-page');
+                    if (input) {
+                        input.max = pdf.numPages;
+                        input.placeholder = `1-${pdf.numPages}`;
+                    }
+                } catch (err) {
+                    console.error("Lỗi khi đọc PDF để lấy số trang:", err);
+                }
+            } else {
+                totalPdfPages = 0;
+                const input = document.getElementById('target-page');
+                if (input) {
+                    input.removeAttribute('max');
+                    input.placeholder = "Tất cả";
+                }
+            }
 
             dropZone.style.display = 'none';
             settingsArea.style.display = 'block';
@@ -1234,31 +1391,175 @@
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjs.getDocument(arrayBuffer).promise;
             let fullText = '';
-            for (let i = 1; i <= pdf.numPages; i++) {
+
+            const targetPageVal = document.getElementById('target-page')?.value.trim();
+            let pagesToProcess = [];
+
+            if (targetPageVal) {
+                if (targetPageVal.includes('-')) {
+                    const parts = targetPageVal.split('-');
+                    const s = parseInt(parts[0]);
+                    const e = parseInt(parts[1]);
+                    if (!isNaN(s) && !isNaN(e)) {
+                        const start = Math.max(1, Math.min(s, e));
+                        const end = Math.min(pdf.numPages, Math.max(s, e));
+                        for (let p = start; p <= end; p++) pagesToProcess.push(p);
+                    }
+                } else {
+                    const p = parseInt(targetPageVal);
+                    if (!isNaN(p)) pagesToProcess.push(p);
+                }
+            } else {
+                for (let p = 1; p <= pdf.numPages; p++) pagesToProcess.push(p);
+            }
+
+            for (let i of pagesToProcess) {
+                if (i > pdf.numPages || i < 1) continue;
                 const page = await pdf.getPage(i);
                 const textContent = await page.getTextContent();
                 const viewport = page.getViewport({ scale: 1.0 });
                 const pageHeight = viewport.height;
 
-                let lastY = -1;
-                let text = '';
-                for (let item of textContent.items) {
-                    const y = item.transform[5];
+                let headerThreshold = parseInt(document.getElementById('header-filter')?.value || '35');
+                let footerThreshold = parseInt(document.getElementById('footer-filter')?.value || '35');
 
-                    // BỘ LỌC THÔNG MINH DỰA TRÊN TỌA ĐỘ Y (Khoảng cách vật lý)
-                    // Bỏ qua các dòng text nằm sát mép trên (Header) hoặc mép dưới (Footer) của trang (Khoảng 40 points)
-                    if (y < 40 || y > pageHeight - 40) {
-                        continue;
-                    }
+                // Áp dụng bộ lọc lề ngoại lệ riêng cho trang hiện tại
+                const exceptionRows = document.querySelectorAll('.exception-row');
+                for (let row of exceptionRows) {
+                    const pagesInput = row.querySelector('.exc-pages').value.trim();
+                    const hInput = row.querySelector('.exc-header').value.trim();
+                    const fInput = row.querySelector('.exc-footer').value.trim();
 
-                    if (lastY == -1 || Math.abs(y - lastY) > 5) {
-                        text += '\n' + item.str;
-                    } else {
-                        text += item.str;
+                    if (pagesInput) {
+                        let isMatch = false;
+                        const ranges = pagesInput.split(',');
+                        for (let r of ranges) {
+                            r = r.trim();
+                            if (r.includes('-')) {
+                                const parts = r.split('-');
+                                const start = parseInt(parts[0]);
+                                const end = parseInt(parts[1]);
+                                if (!isNaN(start) && !isNaN(end) && i >= start && i <= end) {
+                                    isMatch = true;
+                                    break;
+                                }
+                            } else {
+                                const p = parseInt(r);
+                                if (!isNaN(p) && i === p) {
+                                    isMatch = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (isMatch) {
+                            if (hInput !== '') headerThreshold = parseInt(hInput);
+                            if (fInput !== '') footerThreshold = parseInt(fInput);
+                            break; // Dừng lại ở ngoại lệ đầu tiên khớp
+                        }
                     }
-                    lastY = y;
                 }
-                // Dùng 1 khoảng trắng (hoặc 1 dấu \n) để nối trang, giúp câu bị đứt đoạn giữa 2 trang liền mạch lại
+
+                // THUẬT TOÁN PHÂN CHÍCH BỐ CỤC (LAYOUT RECONSTRUCTION) CHO TÀI LIỆU KHOA HỌC:
+                // Tự động phân chia 2 cột và tiêu đề tràn trang (Full-Width) để bảo toàn thứ tự đọc tự nhiên.
+                const pageWidth = viewport.width;
+                const midX = pageWidth / 2;
+                let text = '';
+
+                // Lọc và làm sạch danh sách text items
+                let items = textContent.items.map(item => {
+                    return {
+                        str: item.str,
+                        x: item.transform[4],
+                        y: item.transform[5],
+                        width: item.width || 0,
+                        height: item.height || 0
+                    };
+                });
+
+                // Lọc bỏ các dòng text nằm sát mép trên (Header) hoặc mép dưới (Footer)
+                items = items.filter(item => item.y >= footerThreshold && item.y <= pageHeight - headerThreshold);
+
+                if (items.length > 0) {
+                    // Xác định xem trang có bố cục 2 cột song song hay không
+                    let leftCount = 0;
+                    let rightCount = 0;
+
+                    for (let item of items) {
+                        const centerX = item.x + item.width / 2;
+                        // Không tính các khối đi ngang qua chính giữa trang (như tiêu đề rộng)
+                        const isCrossing = item.x < midX - 40 && (item.x + item.width) > midX + 40;
+                        if (!isCrossing) {
+                            if (centerX < midX) leftCount++;
+                            else rightCount++;
+                        }
+                    }
+
+                    // Nếu cả hai bên cột đều có lượng chữ đáng kể, đây là trang chia 2 cột
+                    const isTwoColumn = leftCount > 6 && rightCount > 6;
+
+                    let sortedItems = [];
+                    if (isTwoColumn) {
+                        const headerItems = [];
+                        const leftItems = [];
+                        const rightItems = [];
+
+                        for (let item of items) {
+                            const isCrossing = item.x < midX - 40 && (item.x + item.width) > midX + 40;
+                            const centerX = item.x + item.width / 2;
+
+                            if (isCrossing) {
+                                headerItems.push(item);
+                            } else {
+                                if (centerX < midX) {
+                                    leftItems.push(item);
+                                } else {
+                                    rightItems.push(item);
+                                }
+                            }
+                        }
+
+                        // Hàm sắp xếp tự nhiên: Từ trên xuống dưới (Y giảm dần), cùng hàng thì từ trái sang phải (X tăng dần)
+                        const sortNatural = (arr) => {
+                            arr.sort((a, b) => {
+                                if (Math.abs(a.y - b.y) > 4) {
+                                    return b.y - a.y; // Cao hơn xếp trước
+                                }
+                                return a.x - b.x; // Bên trái xếp trước
+                            });
+                        };
+
+                        sortNatural(headerItems);
+                        sortNatural(leftItems);
+                        sortNatural(rightItems);
+
+                        // Ghép lại theo thứ tự đọc chuẩn học thuật: Tiêu đề/Full-width -> Cột trái -> Cột phải
+                        sortedItems = [...headerItems, ...leftItems, ...rightItems];
+                    } else {
+                        // Trang 1 cột bình thường: Sắp xếp tự nhiên từ trên xuống dưới, trái sang phải
+                        sortedItems = [...items];
+                        sortedItems.sort((a, b) => {
+                            if (Math.abs(a.y - b.y) > 4) {
+                                return b.y - a.y;
+                            }
+                            return a.x - b.x;
+                        });
+                    }
+
+                    // Ghép chữ từ danh sách các ký tự đã được phân tích bố cục hoàn hảo
+                    let lastY = -1;
+                    for (let item of sortedItems) {
+                        if (lastY == -1) {
+                            text += item.str;
+                        } else if (Math.abs(item.y - lastY) > 8) { // Tăng lên 8px để tránh lệch dòng nhẹ do font/superscript
+                            text += '\n' + item.str;
+                        } else {
+                            text += item.str; // Trả lại ghép chữ nguyên bản để tránh chèn khoảng trắng làm đứt từ (vd: R EFERENCES)
+                        }
+                        lastY = item.y;
+                    }
+                }
+
+                // Dùng 1 dấu \n để nối trang, giúp câu bị đứt đoạn giữa 2 trang được nối liền lại
                 fullText += text + '\n';
             }
             return fullText;
@@ -1273,7 +1574,8 @@
 
         function chunkText(text, maxLength) {
             // Lọc bỏ phần References/Tài liệu tham khảo ở cuối bài
-            const refRegex = /\n\s*(?:(?:[0-9]+[\.\s]*|[IVX]+[\.\s]*))?(?:REFERENCES?|BIBLIOGRAPHY|TÀI LIỆU THAM KHẢO)\s*\n/gi;
+            // NÂNG CẤP SIÊU CẤP: Chấp nhận mọi khoảng trắng/xuống dòng (\s*) ở giữa các chữ cái của từ khóa (đối phó lỗi chia chữ của PDF.js)
+            const refRegex = /(?:\r?\n|^)\s*(?:\[?\d+\]?[\.\s]*|[IVXLCDM]+[\.\s]*)?(?:R\s*E\s*F\s*E\s*R\s*E\s*N\s*C\s*E\s*S?|B\s*I\s*B\s*L\s*I\s*O\s*G\s*R\s*A\s*P\s*H\s*Y|T\s*À\s*I\s*L\s*I\s*Ệ\s*U\s*T\s*H\s*A\s*M\s*K\s*H\s*Ả\s*O)\s*(?:\r?\n|$)/gi;
             let match;
             let lastRefIndex = -1;
             while ((match = refRegex.exec(text)) !== null) {
@@ -1307,34 +1609,13 @@
                 // BẢO VỆ ĐOẠN ABSTRACT VÀ METADATA: Không được lọc nếu chứa các từ khóa này
                 const isProtected = lower.includes('abstract') || lower.includes('index terms') || lower.includes('keywords');
 
-                // --- BỘ LỌC RÁC THÔNG MINH (Headers, Footers, Metadata) ---
-                if (!isProtected) {
-                    if (lower.includes('translations and content mining')) continue;
-                    if (lower.includes('republication/redistribution requires')) continue;
-                    if (lower.includes('authorized licensed use limited to')) continue;
-                    if (lower.includes('ieee.org/publications')) continue;
-                    if (lower.match(/©|\(c\)/) && lower.includes('ieee')) continue;
-                    if (lower.includes('0093-9994')) continue;
-                    if (sentence.startsWith('http://') || sentence.startsWith('https://')) continue;
-                }
-
-                // Lọc số trang và DOI (Chỉ lọc nếu không phải đoạn Abstract)
-                if (!isProtected) {
-                    if (lower.match(/^page\s*\d+/i)) continue;
-                    if (lower.match(/^doi:?\s*10\.\d+/i)) continue;
-                    if (lower.match(/^vol\.\s*\d+|^issue\s*\d+/i)) continue;
-                    if (lower.match(/^issn\s*\d+/i)) continue;
+                // Lọc dòng kẻ ngang (Mặc định bật)
+                if (lower.length >= 3 && lower.replace(/\s/g, '').match(/^[-_—=]+$/)) {
+                    continue;
                 }
 
                 // Lọc con số trang đứng một mình (ví dụ: "6", "12", "iv")
                 if (sentence.length < 5 && lower.match(/^[0-9ivxldcm]+$/i)) continue;
-
-                const publishers = ['nature portfolio', 'science direct', 'elsevier', 'springer', 'mdpi', 'frontiers in', 'arxiv:', 'proceedings of', 'journal of', 'ieee transactions on', 'citation information:', 'accepted for publication', 'prior to final publication'];
-                // Lọc tên các nhà xuất bản và thông tin trích dẫn (Chỉ lọc nếu chuỗi ngắn, tránh lọc nhầm Abstract)
-                if (publishers.some(p => lower.includes(p)) && sentence.length < 150 && !isProtected) continue;
-
-                // Lọc các dòng chỉ chứa ngày tháng năm (thường là footer)
-                if (lower.match(/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/) && !isProtected) continue;
 
                 // --- BỘ LỌC DỮ LIỆU BẢNG BIỂU (TABLES) ---
                 const numCount = (sentence.match(/\d/g) || []).length;
@@ -1381,10 +1662,30 @@
             return chunks;
         }
 
+        function cleanUnprintableChars(text) {
+            if (!text) return '';
+            let cleaned = text.replace(/[\uE000-\uF8FF\uFFFD]/g, ' [công thức] ');
+            cleaned = cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '');
+            cleaned = cleaned.replace(/(\s*\[công thức\]\s*)+/g, ' [công thức] ');
+            return cleaned.trim();
+        }
+
+        function cleanGoogleSpecificMath(text) {
+            if (!text) return '';
+            let cleaned = text;
+            cleaned = cleaned.replace(/\$\$.*?\$\$/g, ' [công thức] ');
+            cleaned = cleaned.replace(/\$.*?\$/g, ' [công thức] ');
+            cleaned = cleaned.replace(/(?:[\u2200-\u22FF\u2190-\u21FF\u2700-\u27BF][\s]*){2,}/g, ' [công thức] ');
+            cleaned = cleaned.replace(/(\s*\[công thức\]\s*)+/g, ' [công thức] ');
+            return cleaned.trim();
+        }
+
         // --- TRANSLATE API GOOGLE ---
         async function translateGoogle(text, sl, tl) {
             try {
-                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
+                // Văn bản truyền vào đã được làm sạch ở vòng lặp render, chạy phòng hờ
+                const cleanedText = cleanGoogleSpecificMath(cleanUnprintableChars(text));
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(cleanedText)}`;
                 const response = await fetch(url);
                 const json = await response.json();
                 let translated = '';
@@ -1483,7 +1784,16 @@ MANDATORY FORMAT:
         async function startTranslation() {
             const myTranslationId = ++currentTranslationId;
             const engine = document.getElementById('engine-select').value;
-            const isGemini = engine !== 'google';
+
+            if (engine === 'google-doc') {
+                const sl = document.getElementById('source-lang').value;
+                const tl = document.getElementById('target-lang').value;
+                const url = `https://translate.google.com/?op=docs&sl=${sl}&tl=${tl}`;
+                window.open(url, '_blank');
+                return;
+            }
+
+            const isGemini = engine.startsWith('gemini');
 
             if (isGemini) {
                 const key = localStorage.getItem('gemini_api_key');
@@ -1503,14 +1813,16 @@ MANDATORY FORMAT:
             bilingualResults = [];
             isUserScrollingUp = false;
 
-            const file = fileInput.files[0];
-            const ext = file.name.split('.').pop().toLowerCase();
-            const sl = document.getElementById('source-lang').value;
-            const tl = document.getElementById('target-lang').value;
-
             try {
                 statusText.textContent = "Đang đọc nội dung tệp (Trích xuất chữ)...";
                 let text = '';
+                const file = currentFile;
+                if (!file) throw new Error("Không tìm thấy tệp để xử lý.");
+
+                const ext = file.name.split('.').pop().toLowerCase();
+                const sl = document.getElementById('source-lang').value;
+                const tl = document.getElementById('target-lang').value;
+
                 if (ext === 'pdf') { text = await extractTextFromPDF(file); }
                 else if (ext === 'docx') { text = await extractTextFromDocx(file); }
 
@@ -1541,7 +1853,15 @@ MANDATORY FORMAT:
                         await new Promise(r => setTimeout(r, 500));
                     }
 
-                    const sourceText = chunks[i];
+                    let sourceText = chunks[i];
+
+                    // Làm sạch trước các ký tự ô vuông hỏng cho tất cả các bản dịch
+                    sourceText = cleanUnprintableChars(sourceText);
+
+                    // Nếu là dịch Google, dọn sạch thêm các khối LaTeX/toán học rời rạc để tránh vỡ UI
+                    if (!isGemini) {
+                        sourceText = cleanGoogleSpecificMath(sourceText);
+                    }
 
                     const box = document.createElement('div');
                     box.className = 'bilingual-box';
@@ -1782,7 +2102,7 @@ MANDATORY FORMAT:
         <div class="logo">
             <i class="fa-solid fa-language" style="color: var(--primary);"></i>
             <span class="logo-text">SciTranslate Song Ngữ</span>
-            <span style="font-size: 0.5em; color: var(--text-muted); opacity: 0.7;">design by Phan Gia An</span>
+            <span style="font-size: 0.45em; font-weight: 400; color: var(--text-muted); margin-left: -8px; transform: translateY(5px); opacity: 0.7;">design by Phan Gia An</span>
         </div>
         <div style="display: flex; align-items: center; gap: 15px;">
             <button id="highlight-toggle" class="tool-btn active" onclick="setMode('hl')" title="Bật/Tắt Highlight"><i class="fa-solid fa-lightbulb"></i></button>
@@ -2024,7 +2344,7 @@ MANDATORY FORMAT:
             const box = document.getElementById(boxId);
             const targetArea = box.querySelector('.target-text');
             const engine = document.getElementById('engine-select').value;
-            const isGemini = engine !== 'google';
+            const isGemini = engine.startsWith('gemini');
             const sl = document.getElementById('source-lang').value;
             const tl = document.getElementById('target-lang').value;
 
@@ -2205,7 +2525,302 @@ MANDATORY FORMAT:
             return `<html><body><span style="font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.5;">${htmlResult}</span></body></html>`;
         }
 
+        // --- MEASURE TOOL ---
+        let currentPdfDoc = null;
+
+        async function openMeasureTool() {
+            const file = currentFile;
+            if (!file || file.name.split('.').pop().toLowerCase() !== 'pdf') {
+                alert("Vui lòng tải lên file PDF trước khi sử dụng thước đo!");
+                return;
+            }
+
+            const modal = document.getElementById('measure-modal');
+            modal.style.display = 'flex';
+            const container = document.getElementById('measure-pages-container');
+            const resultDiv = document.getElementById('measure-result');
+
+            container.innerHTML = '';
+            resultDiv.textContent = "";
+
+            try {
+                const pdfjs = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+                const arrayBuffer = await file.arrayBuffer();
+                currentPdfDoc = await pdfjs.getDocument(arrayBuffer).promise;
+
+                container.innerHTML = '';
+                const numPages = currentPdfDoc.numPages;
+                const scale = 1.5; // Tăng tỷ lệ để nhìn rõ hơn
+
+                for (let i = 1; i <= numPages; i++) {
+                    const page = await currentPdfDoc.getPage(i);
+                    const viewport = page.getViewport({ scale: scale });
+
+                    const pageWrapper = document.createElement('div');
+                    pageWrapper.className = 'pdf-page-wrapper';
+                    pageWrapper.style.position = 'relative';
+                    pageWrapper.style.boxShadow = '0 15px 45px rgba(0,0,0,0.4)';
+                    pageWrapper.style.backgroundColor = 'white';
+                    pageWrapper.style.marginBottom = '40px';
+                    pageWrapper.style.borderRadius = '2px';
+                    pageWrapper.style.display = 'inline-block';
+                    pageWrapper.style.maxWidth = '100%';
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    canvas.style.display = 'block';
+                    canvas.style.maxWidth = '100%';
+                    canvas.style.height = 'auto'; // Tự động theo tỷ lệ
+
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
+
+                    pageWrapper.appendChild(canvas);
+
+                    const overlay = document.createElement('div');
+                    overlay.style.position = 'absolute';
+                    overlay.style.top = '0';
+                    overlay.style.left = '0';
+                    overlay.style.width = '100%';
+                    overlay.style.height = '100%';
+                    overlay.style.cursor = 'crosshair';
+                    overlay.style.zIndex = '5';
+                    overlay.title = `Nhấp để lấy tọa độ Trang ${i}`;
+
+                    overlay.onclick = (e) => {
+                        const rect = overlay.getBoundingClientRect();
+                        const y = e.clientY - rect.top;
+
+                        // Tính toán tỷ lệ thực tế giữa hiển thị (rect) và PDF points
+                        const displayHeight = rect.height;
+                        const pointsYFromBottom = ((displayHeight - y) / displayHeight) * (viewport.height / scale);
+                        const pointsYFromTop = (y / displayHeight) * (viewport.height / scale);
+
+                        const showFooter = pointsYFromBottom <= pointsYFromTop;
+                        resultDiv.innerHTML = `
+                            <div style="font-weight:700; color:var(--primary); margin-bottom:8px; font-size:1.1rem;">Đang đo: Trang ${i}</div>
+                            <div style="display:flex; justify-content:center; align-items:center;">
+                                ${showFooter ? `
+                                <div style="padding:12px 25px; background:rgba(67, 97, 238, 0.1); border-radius:10px; border:1px solid rgba(67, 97, 238, 0.2); min-width:250px;">
+                                    <span style="color:var(--text-muted); font-size:0.85rem; display:block; margin-bottom:4px;">Từ Dưới lên (Footer)</span>
+                                    <strong style="color:var(--primary); font-size:1.8rem;">${Math.round(pointsYFromBottom)} points</strong>
+                                </div>
+                                ` : `
+                                <div style="padding:12px 25px; background:rgba(239, 68, 68, 0.1); border-radius:10px; border:1px solid rgba(239, 68, 68, 0.2); min-width:250px;">
+                                    <span style="color:var(--text-muted); font-size:0.85rem; display:block; margin-bottom:4px;">Từ Trên xuống (Header)</span>
+                                    <strong style="color:#ef4444; font-size:1.8rem;">${Math.round(pointsYFromTop)} points</strong>
+                                </div>
+                                `}
+                            </div>
+                        `;
+                    };
+
+                    pageWrapper.appendChild(overlay);
+
+                    // Thêm số trang góc trên bên trái
+                    const pageNumBadge = document.createElement('div');
+                    pageNumBadge.textContent = `P.${i}`;
+                    pageNumBadge.style.position = 'absolute';
+                    pageNumBadge.style.top = '10px';
+                    pageNumBadge.style.left = '10px';
+                    pageNumBadge.style.background = 'rgba(0,0,0,0.6)';
+                    pageNumBadge.style.color = 'white';
+                    pageNumBadge.style.padding = '2px 8px';
+                    pageNumBadge.style.borderRadius = '4px';
+                    pageNumBadge.style.fontSize = '0.75rem';
+                    pageNumBadge.style.zIndex = '10';
+                    pageNumBadge.style.pointerEvents = 'none';
+                    pageWrapper.appendChild(pageNumBadge);
+
+                    container.appendChild(pageWrapper);
+
+                    await page.render(renderContext).promise;
+                }
+
+                // Lắng nghe sự kiện cuộn để hiển thị trang hiện tại
+                const updatePageIndicator = () => {
+                    const wrappers = container.querySelectorAll('.pdf-page-wrapper');
+                    let currentPage = 1;
+                    let maxVisible = 0;
+                    const containerRect = container.getBoundingClientRect();
+
+                    wrappers.forEach((wrapper, index) => {
+                        const rect = wrapper.getBoundingClientRect();
+                        // Tính diện tích hiển thị của trang trong khung nhìn
+                        const visibleHeight = Math.min(rect.bottom, containerRect.bottom) - Math.max(rect.top, containerRect.top);
+                        if (visibleHeight > maxVisible) {
+                            maxVisible = visibleHeight;
+                            currentPage = index + 1;
+                        }
+                    });
+                    document.getElementById('modal-page-info').textContent = `Đang ở trang: ${currentPage} / ${numPages}`;
+                };
+
+                container.onscroll = updatePageIndicator;
+
+                // Gọi lần đầu để cập nhật trạng thái ngay lập tức
+                updatePageIndicator();
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = `<div style="color:#ef4444; padding:50px; text-align:center;">
+                    <i class="fa-solid fa-triangle-exclamation fa-3x" style="margin-bottom:15px;"></i>
+                    <h3>Lỗi hiển thị</h3>
+                    <p>${err.message}</p>
+                </div>`;
+            }
+        }
+
+        function selectPageForImport(pageNum) {
+            const input = document.getElementById('target-page');
+            if (input) {
+                input.value = pageNum;
+                closeMeasureModal();
+                // Thông báo nhẹ nhàng
+                const statusText = document.getElementById('status-text');
+                if (statusText) statusText.textContent = `Đã chọn trang ${pageNum}. Nhấn nút Play để bắt đầu.`;
+            }
+        }
+
+        function closeMeasureModal() {
+            document.getElementById('measure-modal').style.display = 'none';
+        }
+
+        // --- CUSTOM PAGE EXCEPTIONS HELPER ---
+        function addExceptionRow() {
+            const container = document.getElementById('exception-container');
+            const row = document.createElement('div');
+            row.className = 'exception-row';
+            row.style.cssText = 'display: flex; gap: 8px; align-items: center; margin-top: 8px; background: rgba(255, 255, 255, 0.03); padding: 8px; border-radius: 8px; border: 1px solid var(--card-border);';
+
+            const maxPlaceholder = totalPdfPages > 0 ? `1-${totalPdfPages}` : 'Trang';
+
+            row.innerHTML = `
+                <div style="position: relative; flex: 1.5; display: flex; align-items: center;">
+                    <input type="text" class="exc-pages" placeholder="${maxPlaceholder}" oninput="validatePageInput(this)" style="width: 100%; padding: 6px 20px 6px 6px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-size: 0.8rem; text-align: center;" required>
+                    <div style="position: absolute; right: 4px; display: flex; flex-direction: column; gap: 1px; z-index: 10;">
+                        <button type="button" onclick="adjustPageValue(this.parentElement.previousElementSibling, 'up')" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 0; font-size: 0.65rem; height: 10px; display: flex; align-items: center; justify-content: center; line-height: 1;" onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-muted)'"><i class="fa-solid fa-chevron-up"></i></button>
+                        <button type="button" onclick="adjustPageValue(this.parentElement.previousElementSibling, 'down')" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 0; font-size: 0.65rem; height: 10px; display: flex; align-items: center; justify-content: center; line-height: 1;" onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-muted)'"><i class="fa-solid fa-chevron-down"></i></button>
+                    </div>
+                </div>
+                <input type="number" class="exc-header" placeholder="Lề trên" style="flex: 1; padding: 6px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-size: 0.8rem; text-align: center;">
+                <input type="number" class="exc-footer" placeholder="Lề dưới" style="flex: 1; padding: 6px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-size: 0.8rem; text-align: center;">
+                <button type="button" onclick="addExceptionRow()" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; transition: all 0.2s;" onmouseover="this.style.background='#10b981'; this.style.color='white'" onmouseout="this.style.background='rgba(16, 185, 129, 0.15)'; this.style.color='#10b981'"><i class="fa-solid fa-plus"></i></button>
+                <button type="button" onclick="this.parentElement.remove()" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; transition: all 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='white'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.color='#ef4444'"><i class="fa-solid fa-xmark"></i></button>
+            `;
+            container.appendChild(row);
+        }
+
+        function validatePageInput(input) {
+            let val = input.value.replace(/[^0-9,-]/g, '');
+            if (!totalPdfPages) {
+                input.value = val;
+                return;
+            }
+
+            const parts = val.split(',');
+            const validatedParts = [];
+            for (let part of parts) {
+                if (part.includes('-')) {
+                    const sub = part.split('-');
+                    if (sub.length >= 2) {
+                        let start = parseInt(sub[0]);
+                        let end = parseInt(sub[1]);
+                        if (!isNaN(start)) {
+                            if (start > totalPdfPages) start = totalPdfPages;
+                            if (start < 1) start = 1;
+                        }
+                        if (!isNaN(end)) {
+                            if (end > totalPdfPages) end = totalPdfPages;
+                            if (end < 1) end = 1;
+                        }
+                        if (!isNaN(start) && !isNaN(end)) {
+                            validatedParts.push(`${start}-${end}`);
+                        } else if (!isNaN(start)) {
+                            validatedParts.push(`${start}-`);
+                        } else if (!isNaN(end)) {
+                            validatedParts.push(`-${end}`);
+                        }
+                    } else {
+                        validatedParts.push(part);
+                    }
+                } else {
+                    const p = parseInt(part);
+                    if (!isNaN(p)) {
+                        let validatedP = p;
+                        if (p > totalPdfPages) validatedP = totalPdfPages;
+                        if (p < 1) validatedP = 1;
+                        validatedParts.push(validatedP);
+                    } else {
+                        // Cho phép ký tự dở dang khi đang gõ
+                        validatedParts.push(part);
+                    }
+                }
+            }
+            input.value = validatedParts.join(',');
+        }
+
+        function adjustPageValue(input, direction) {
+            let val = input.value.trim();
+            if (!val) {
+                input.value = "1";
+                validatePageInput(input);
+                return;
+            }
+
+            // Tìm cụm số cuối cùng trong chuỗi để tăng/giảm
+            const regex = /(\d+)(?!.*\d)/;
+            const match = val.match(regex);
+            if (match) {
+                const lastNum = parseInt(match[1]);
+                let nextNum = direction === 'up' ? lastNum + 1 : lastNum - 1;
+                if (nextNum < 1) nextNum = 1;
+                if (totalPdfPages > 0 && nextNum > totalPdfPages) nextNum = totalPdfPages;
+
+                // Thay thế số cuối cùng bằng số mới
+                input.value = val.substring(0, match.index) + nextNum + val.substring(match.index + match[1].length);
+            } else {
+                input.value = "1";
+            }
+            validatePageInput(input);
+        }
+
     </script>
+
+    <!-- Measure Modal Overlay -->
+    <div id="measure-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:10000; overflow:hidden; align-items:center; justify-content:center; padding:10px;">
+        <div
+            style="background:var(--card-bg); width:98%; height:98%; border-radius:20px; position:relative; box-shadow: 0 40px 100px rgba(0,0,0,0.6); display:flex; flex-direction:column; overflow:hidden; border: 1px solid rgba(255,255,255,0.05);">
+            <button onclick="closeMeasureModal()"
+                style="position:absolute; top:20px; right:25px; background:rgba(255,255,255,0.1); border:none; width:45px; height:45px; border-radius:50%; font-size:1.6rem; cursor:pointer; color:white; display:flex; align-items:center; justify-content:center; z-index:100; transition:all 0.3s;"
+                onmouseover="this.style.background='#ef4444'; this.style.transform='rotate(90deg)'"
+                onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='rotate(0deg)'">&times;</button>
+
+            <div
+                style="padding:15px 30px; border-bottom:1px solid var(--card-border); text-align:center; background:rgba(0,0,0,0.3); position:relative;">
+                <h3 style="font-size:1.5rem; margin-bottom:5px; color:var(--primary); font-weight:700;"><i
+                        class="fa-solid fa-ruler-combined"></i> THƯỚC ĐO TỌA ĐỘ PDF</h3>
+                <div id="modal-page-info"
+                    style="position:absolute; bottom:15px; left:30px; color:var(--text-muted); font-size:0.85rem; font-weight:500; background:rgba(255,255,255,0.05); padding:4px 12px; border-radius:20px;">
+                    Trang 1 / ...</div>
+                <p style="color:var(--text-muted); font-size:0.9rem;">Nhấp vào vị trí Header/Footer để xem khoảng cách
+                    Points chính xác.</p>
+            </div>
+
+            <div id="measure-pages-container"
+                style="flex:1; overflow-y:auto; padding:30px; background:rgba(0,0,0,0.2); display:flex; flex-direction:column; align-items:center; scroll-behavior: smooth;">
+                <!-- PDF Pages will be rendered here -->
+            </div>
+
+            <div id="measure-result"
+                style="padding:20px; background:var(--card-bg); border-top:1px solid var(--card-border); min-height:130px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; box-shadow: 0 -15px 40px rgba(0,0,0,0.3);">
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

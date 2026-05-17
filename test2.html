@@ -340,6 +340,19 @@
             animation: fadeIn 0.3s ease forwards;
         }
 
+        .get-key-link {
+            color: #eab308 !important; /* Màu vàng sang trọng dễ nhìn */
+            text-decoration: underline;
+            margin-left: 6px;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+
+        .get-key-link:hover {
+            color: #facc15 !important; /* Vàng sáng rực rỡ khi hover */
+            text-decoration: none;
+        }
+
         .gemini-auth input {
             flex: 1;
             background: var(--card-bg);
@@ -820,6 +833,12 @@
                         </div>
                     </div>
 
+                    <!-- Custom Page Exceptions Section -->
+                    <div id="exception-container" style="margin-top: 5px;"></div>
+                    <button type="button" onclick="addExceptionRow()" style="background: transparent; border: 1px dashed var(--primary); color: var(--primary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; margin-top: 5px; margin-bottom: 12px; width: 100%; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;" onmouseover="this.style.background='rgba(13, 148, 136, 0.1)'" onmouseout="this.style.background='transparent'">
+                        <i class="fa-solid fa-plus-circle"></i> Thêm lề riêng cho trang đặc biệt
+                    </button>
+
                     <div
                         style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px; padding-top: 10px; border-top: 1px dashed var(--card-border);">
                         <label for="target-page"
@@ -944,6 +963,7 @@
         const outputDiv = document.getElementById('bilingual-output');
 
         let currentFile = null;
+        let totalPdfPages = 0;
         let bilingualResults = [];
         let isPaused = false;
         let currentTranslationId = 0;
@@ -1327,6 +1347,7 @@
                     const pdfjs = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
                     const arrayBuffer = await file.arrayBuffer();
                     const pdf = await pdfjs.getDocument(arrayBuffer).promise;
+                    totalPdfPages = pdf.numPages; // Cập nhật số trang của PDF
                     const input = document.getElementById('target-page');
                     if (input) {
                         input.max = pdf.numPages;
@@ -1336,6 +1357,7 @@
                     console.error("Lỗi khi đọc PDF để lấy số trang:", err);
                 }
             } else {
+                totalPdfPages = 0;
                 const input = document.getElementById('target-page');
                 if (input) {
                     input.removeAttribute('max');
@@ -1384,30 +1406,146 @@
                 const viewport = page.getViewport({ scale: 1.0 });
                 const pageHeight = viewport.height;
 
-                const headerThreshold = parseInt(document.getElementById('header-filter')?.value || '35');
-                const footerThreshold = parseInt(document.getElementById('footer-filter')?.value || '35');
+                let headerThreshold = parseInt(document.getElementById('header-filter')?.value || '35');
+                let footerThreshold = parseInt(document.getElementById('footer-filter')?.value || '35');
 
-                let lastY = -1;
-                let text = '';
-                for (let item of textContent.items) {
-                    const y = item.transform[5];
+                // Áp dụng bộ lọc lề ngoại lệ riêng cho trang hiện tại
+                const exceptionRows = document.querySelectorAll('.exception-row');
+                for (let row of exceptionRows) {
+                    const pagesInput = row.querySelector('.exc-pages').value.trim();
+                    const hInput = row.querySelector('.exc-header').value.trim();
+                    const fInput = row.querySelector('.exc-footer').value.trim();
 
-                    // BỘ LỌC THÔNG MINH DỰA TRÊN TỌA ĐỘ Y (Khoảng cách vật lý)
-                    // Bỏ qua các dòng text nằm sát mép trên (Header) hoặc mép dưới (Footer) của trang
-                    if (y < footerThreshold || y > pageHeight - headerThreshold) {
-                        continue;
+                    if (pagesInput) {
+                        let isMatch = false;
+                        const ranges = pagesInput.split(',');
+                        for (let r of ranges) {
+                            r = r.trim();
+                            if (r.includes('-')) {
+                                const parts = r.split('-');
+                                const start = parseInt(parts[0]);
+                                const end = parseInt(parts[1]);
+                                if (!isNaN(start) && !isNaN(end) && i >= start && i <= end) {
+                                    isMatch = true;
+                                    break;
+                                }
+                            } else {
+                                const p = parseInt(r);
+                                if (!isNaN(p) && i === p) {
+                                    isMatch = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (isMatch) {
+                            if (hInput !== '') headerThreshold = parseInt(hInput);
+                            if (fInput !== '') footerThreshold = parseInt(fInput);
+                            break; // Dừng lại ở ngoại lệ đầu tiên khớp
+                        }
                     }
-
-                    if (lastY == -1) {
-                        text += item.str;
-                    } else if (Math.abs(y - lastY) > 5) {
-                        text += '\n' + item.str;
-                    } else {
-                        text += item.str;
-                    }
-                    lastY = y;
                 }
-                // Dùng 1 dấu \n để nối trang, giúp câu bị đứt đoạn giữa 2 trang được regex xử lý nối liền lại
+
+                // THUẬT TOÁN PHÂN CHÍCH BỐ CỤC (LAYOUT RECONSTRUCTION) CHO TÀI LIỆU KHOA HỌC:
+                // Tự động phân chia 2 cột và tiêu đề tràn trang (Full-Width) để bảo toàn thứ tự đọc tự nhiên.
+                const pageWidth = viewport.width;
+                const midX = pageWidth / 2;
+                let text = '';
+
+                // Lọc và làm sạch danh sách text items
+                let items = textContent.items.map(item => {
+                    return {
+                        str: item.str,
+                        x: item.transform[4],
+                        y: item.transform[5],
+                        width: item.width || 0,
+                        height: item.height || 0
+                    };
+                });
+
+                // Lọc bỏ các dòng text nằm sát mép trên (Header) hoặc mép dưới (Footer)
+                items = items.filter(item => item.y >= footerThreshold && item.y <= pageHeight - headerThreshold);
+
+                if (items.length > 0) {
+                    // Xác định xem trang có bố cục 2 cột song song hay không
+                    let leftCount = 0;
+                    let rightCount = 0;
+                    
+                    for (let item of items) {
+                        const centerX = item.x + item.width / 2;
+                        // Không tính các khối đi ngang qua chính giữa trang (như tiêu đề rộng)
+                        const isCrossing = item.x < midX - 40 && (item.x + item.width) > midX + 40;
+                        if (!isCrossing) {
+                            if (centerX < midX) leftCount++;
+                            else rightCount++;
+                        }
+                    }
+                    
+                    // Nếu cả hai bên cột đều có lượng chữ đáng kể, đây là trang chia 2 cột
+                    const isTwoColumn = leftCount > 6 && rightCount > 6;
+                    
+                    let sortedItems = [];
+                    if (isTwoColumn) {
+                        const headerItems = [];
+                        const leftItems = [];
+                        const rightItems = [];
+                        
+                        for (let item of items) {
+                            const isCrossing = item.x < midX - 40 && (item.x + item.width) > midX + 40;
+                            const centerX = item.x + item.width / 2;
+                            
+                            if (isCrossing) {
+                                headerItems.push(item);
+                            } else {
+                                if (centerX < midX) {
+                                    leftItems.push(item);
+                                } else {
+                                    rightItems.push(item);
+                                }
+                            }
+                        }
+                        
+                        // Hàm sắp xếp tự nhiên: Từ trên xuống dưới (Y giảm dần), cùng hàng thì từ trái sang phải (X tăng dần)
+                        const sortNatural = (arr) => {
+                            arr.sort((a, b) => {
+                                if (Math.abs(a.y - b.y) > 4) {
+                                    return b.y - a.y; // Cao hơn xếp trước
+                                }
+                                return a.x - b.x; // Bên trái xếp trước
+                            });
+                        };
+                        
+                        sortNatural(headerItems);
+                        sortNatural(leftItems);
+                        sortNatural(rightItems);
+                        
+                        // Ghép lại theo thứ tự đọc chuẩn học thuật: Tiêu đề/Full-width -> Cột trái -> Cột phải
+                        sortedItems = [...headerItems, ...leftItems, ...rightItems];
+                    } else {
+                        // Trang 1 cột bình thường: Sắp xếp tự nhiên từ trên xuống dưới, trái sang phải
+                        sortedItems = [...items];
+                        sortedItems.sort((a, b) => {
+                            if (Math.abs(a.y - b.y) > 4) {
+                                return b.y - a.y;
+                            }
+                            return a.x - b.x;
+                        });
+                    }
+                    
+                    // Ghép chữ từ danh sách các ký tự đã được phân tích bố cục hoàn hảo
+                    let lastY = -1;
+                    for (let item of sortedItems) {
+                        if (lastY == -1) {
+                            text += item.str;
+                        } else if (Math.abs(item.y - lastY) > 8) { // Tăng lên 8px để tránh lệch dòng nhẹ do font/superscript
+                            text += '\n' + item.str;
+                        } else {
+                            text += item.str; // Trả lại ghép chữ nguyên bản để tránh chèn khoảng trắng làm đứt từ (vd: R EFERENCES)
+                        }
+                        lastY = item.y;
+                    }
+                }
+                
+                // Dùng 1 dấu \n để nối trang, giúp câu bị đứt đoạn giữa 2 trang được nối liền lại
                 fullText += text + '\n';
             }
             return fullText;
@@ -1422,7 +1560,8 @@
 
         function chunkText(text, maxLength) {
             // Lọc bỏ phần References/Tài liệu tham khảo ở cuối bài
-            const refRegex = /\n\s*(?:(?:[0-9]+[\.\s]*|[IVX]+[\.\s]*))?(?:REFERENCES?|BIBLIOGRAPHY|TÀI LIỆU THAM KHẢO)\s*\n/gi;
+            // NÂNG CẤP SIÊU CẤP: Chấp nhận mọi khoảng trắng/xuống dòng (\s*) ở giữa các chữ cái của từ khóa (đối phó lỗi chia chữ của PDF.js)
+            const refRegex = /(?:\r?\n|^)\s*(?:\[?\d+\]?[\.\s]*|[IVXLCDM]+[\.\s]*)?(?:R\s*E\s*F\s*E\s*R\s*E\s*N\s*C\s*E\s*S?|B\s*I\s*B\s*L\s*I\s*O\s*G\s*R\s*A\s*P\s*H\s*Y|T\s*À\s*I\s*L\s*I\s*Ệ\s*U\s*T\s*H\s*A\s*M\s*K\s*H\s*Ả\s*O)\s*(?:\r?\n|$)/gi;
             let match;
             let lastRefIndex = -1;
             while ((match = refRegex.exec(text)) !== null) {
@@ -1509,10 +1648,30 @@
             return chunks;
         }
 
+        function cleanUnprintableChars(text) {
+            if (!text) return '';
+            let cleaned = text.replace(/[\uE000-\uF8FF\uFFFD]/g, ' [công thức] ');
+            cleaned = cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '');
+            cleaned = cleaned.replace(/(\s*\[công thức\]\s*)+/g, ' [công thức] ');
+            return cleaned.trim();
+        }
+
+        function cleanGoogleSpecificMath(text) {
+            if (!text) return '';
+            let cleaned = text;
+            cleaned = cleaned.replace(/\$\$.*?\$\$/g, ' [công thức] ');
+            cleaned = cleaned.replace(/\$.*?\$/g, ' [công thức] ');
+            cleaned = cleaned.replace(/(?:[\u2200-\u22FF\u2190-\u21FF\u2700-\u27BF][\s]*){2,}/g, ' [công thức] ');
+            cleaned = cleaned.replace(/(\s*\[công thức\]\s*)+/g, ' [công thức] ');
+            return cleaned.trim();
+        }
+
         // --- TRANSLATE API GOOGLE ---
         async function translateGoogle(text, sl, tl) {
             try {
-                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
+                // Văn bản truyền vào đã được làm sạch ở vòng lặp render, chạy phòng hờ
+                const cleanedText = cleanGoogleSpecificMath(cleanUnprintableChars(text));
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(cleanedText)}`;
                 const response = await fetch(url);
                 const json = await response.json();
                 let translated = '';
@@ -1680,7 +1839,15 @@ MANDATORY FORMAT:
                         await new Promise(r => setTimeout(r, 500));
                     }
 
-                    const sourceText = chunks[i];
+                    let sourceText = chunks[i];
+
+                    // Làm sạch trước các ký tự ô vuông hỏng cho tất cả các bản dịch
+                    sourceText = cleanUnprintableChars(sourceText);
+
+                    // Nếu là dịch Google, dọn sạch thêm các khối LaTeX/toán học rời rạc để tránh vỡ UI
+                    if (!isGemini) {
+                        sourceText = cleanGoogleSpecificMath(sourceText);
+                    }
 
                     const box = document.createElement('div');
                     box.className = 'bilingual-box';
@@ -2506,6 +2673,105 @@ MANDATORY FORMAT:
 
         function closeMeasureModal() {
             document.getElementById('measure-modal').style.display = 'none';
+        }
+
+        // --- CUSTOM PAGE EXCEPTIONS HELPER ---
+        function addExceptionRow() {
+            const container = document.getElementById('exception-container');
+            const row = document.createElement('div');
+            row.className = 'exception-row';
+            row.style.cssText = 'display: flex; gap: 8px; align-items: center; margin-top: 8px; background: rgba(255, 255, 255, 0.03); padding: 8px; border-radius: 8px; border: 1px solid var(--card-border);';
+            
+            const maxPlaceholder = totalPdfPages > 0 ? `1-${totalPdfPages}` : 'Trang';
+            
+            row.innerHTML = `
+                <div style="position: relative; flex: 1.5; display: flex; align-items: center;">
+                    <input type="text" class="exc-pages" placeholder="${maxPlaceholder}" oninput="validatePageInput(this)" style="width: 100%; padding: 6px 20px 6px 6px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-size: 0.8rem; text-align: center;" required>
+                    <div style="position: absolute; right: 4px; display: flex; flex-direction: column; gap: 1px; z-index: 10;">
+                        <button type="button" onclick="adjustPageValue(this.parentElement.previousElementSibling, 'up')" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 0; font-size: 0.65rem; height: 10px; display: flex; align-items: center; justify-content: center; line-height: 1;" onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-muted)'"><i class="fa-solid fa-chevron-up"></i></button>
+                        <button type="button" onclick="adjustPageValue(this.parentElement.previousElementSibling, 'down')" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 0; font-size: 0.65rem; height: 10px; display: flex; align-items: center; justify-content: center; line-height: 1;" onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-muted)'"><i class="fa-solid fa-chevron-down"></i></button>
+                    </div>
+                </div>
+                <input type="number" class="exc-header" placeholder="Lề trên" style="flex: 1; padding: 6px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-size: 0.8rem; text-align: center;">
+                <input type="number" class="exc-footer" placeholder="Lề dưới" style="flex: 1; padding: 6px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-size: 0.8rem; text-align: center;">
+                <button type="button" onclick="addExceptionRow()" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; transition: all 0.2s;" onmouseover="this.style.background='#10b981'; this.style.color='white'" onmouseout="this.style.background='rgba(16, 185, 129, 0.15)'; this.style.color='#10b981'"><i class="fa-solid fa-plus"></i></button>
+                <button type="button" onclick="this.parentElement.remove()" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; transition: all 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='white'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.color='#ef4444'"><i class="fa-solid fa-xmark"></i></button>
+            `;
+            container.appendChild(row);
+        }
+
+        function validatePageInput(input) {
+            let val = input.value.replace(/[^0-9,-]/g, '');
+            if (!totalPdfPages) {
+                input.value = val;
+                return;
+            }
+            
+            const parts = val.split(',');
+            const validatedParts = [];
+            for (let part of parts) {
+                if (part.includes('-')) {
+                    const sub = part.split('-');
+                    if (sub.length >= 2) {
+                        let start = parseInt(sub[0]);
+                        let end = parseInt(sub[1]);
+                        if (!isNaN(start)) {
+                            if (start > totalPdfPages) start = totalPdfPages;
+                            if (start < 1) start = 1;
+                        }
+                        if (!isNaN(end)) {
+                            if (end > totalPdfPages) end = totalPdfPages;
+                            if (end < 1) end = 1;
+                        }
+                        if (!isNaN(start) && !isNaN(end)) {
+                            validatedParts.push(`${start}-${end}`);
+                        } else if (!isNaN(start)) {
+                            validatedParts.push(`${start}-`);
+                        } else if (!isNaN(end)) {
+                            validatedParts.push(`-${end}`);
+                        }
+                    } else {
+                        validatedParts.push(part);
+                    }
+                } else {
+                    const p = parseInt(part);
+                    if (!isNaN(p)) {
+                        let validatedP = p;
+                        if (p > totalPdfPages) validatedP = totalPdfPages;
+                        if (p < 1) validatedP = 1;
+                        validatedParts.push(validatedP);
+                    } else {
+                        // Cho phép ký tự dở dang khi đang gõ
+                        validatedParts.push(part);
+                    }
+                }
+            }
+            input.value = validatedParts.join(',');
+        }
+
+        function adjustPageValue(input, direction) {
+            let val = input.value.trim();
+            if (!val) {
+                input.value = "1";
+                validatePageInput(input);
+                return;
+            }
+            
+            // Tìm cụm số cuối cùng trong chuỗi để tăng/giảm
+            const regex = /(\d+)(?!.*\d)/; 
+            const match = val.match(regex);
+            if (match) {
+                const lastNum = parseInt(match[1]);
+                let nextNum = direction === 'up' ? lastNum + 1 : lastNum - 1;
+                if (nextNum < 1) nextNum = 1;
+                if (totalPdfPages > 0 && nextNum > totalPdfPages) nextNum = totalPdfPages;
+                
+                // Thay thế số cuối cùng bằng số mới
+                input.value = val.substring(0, match.index) + nextNum + val.substring(match.index + match[1].length);
+            } else {
+                input.value = "1";
+            }
+            validatePageInput(input);
         }
 
     </script>
