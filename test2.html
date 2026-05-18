@@ -57,6 +57,7 @@
             --upload-bg: rgba(0, 0, 0, 0.02);
             --upload-border: rgba(0, 0, 0, 0.1);
             --box-bg: rgba(0, 0, 0, 0.02);
+            --box-border: rgba(15, 23, 42, 0.75);
             --highlight-bg: rgba(234, 179, 8, 0.4);
             --highlight-text: #000000;
         }
@@ -74,6 +75,7 @@
             --upload-bg: rgba(0, 31, 63, 0.4);
             --upload-border: rgba(255, 255, 255, 0.5);
             --box-bg: #001f3f;
+            --box-border: rgba(234, 179, 8, 0.6);
             --highlight-bg: rgba(234, 179, 8, 0.5);
             --highlight-text: #ffffff;
         }
@@ -643,7 +645,7 @@
 
         .bilingual-box {
             background: var(--box-bg);
-            border: 1px solid var(--card-border);
+            border: 1.5px solid var(--box-border);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 15px;
@@ -656,7 +658,7 @@
             line-height: 1.6;
             margin-bottom: 12px;
             padding-bottom: 12px;
-            border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+            border-bottom: 2px dashed var(--box-border);
             text-align: justify;
             white-space: pre-wrap;
         }
@@ -693,6 +695,31 @@
         .btn-success:hover {
             background: #059669;
             transform: translateY(-2px);
+        }
+
+        table {
+            margin: 25px auto !important;
+            border-collapse: collapse !important;
+            width: 95% !important;
+            max-width: 100% !important;
+            background: var(--card-bg) !important;
+            border: 1.5px solid var(--box-border) !important;
+        }
+
+        th, td {
+            padding: 10px 15px !important;
+            border: 1px solid var(--box-border) !important;
+            text-align: center !important;
+            color: var(--text-main) !important;
+        }
+
+        th {
+            background: rgba(13, 148, 136, 0.1) !important;
+            font-weight: 600 !important;
+        }
+
+        body[data-theme="dark"] th {
+            background: rgba(34, 211, 238, 0.15) !important;
         }
 
         .error-text {
@@ -1244,7 +1271,7 @@
                 if (data) {
                     const isSource = el.closest('.source-container');
                     const fullText = isSource ? data.source : data.target;
-                    const sentences = fullText.match(/.*?[.!?](?=\s+\p{Lu}|\s*$)|.+/gsu) || [fullText];
+                    const sentences = splitTextIntoSentences(fullText);
                     text = sentences[idxInBox] || el.innerText;
                 } else {
                     text = el.innerText;
@@ -1293,6 +1320,45 @@
             return res;
         }
 
+        function splitTextIntoSentences(text) {
+            if (!text) return [];
+            text = formatNumberedEquations(text);
+            let sentences = [];
+            try {
+                const parts = text.split(/(\$\$[\s\S]*?\$\$)/);
+                const regex = /.*?[.!?](?=\s+\p{Lu}|\s*$)/gsu;
+                for (let part of parts) {
+                    if (!part) continue;
+                    if (part.startsWith('$$') && part.endsWith('$$')) {
+                        sentences.push(part);
+                    } else {
+                        let lastIndex = 0;
+                        let match;
+                        regex.lastIndex = 0;
+                        while ((match = regex.exec(part)) !== null) {
+                            sentences.push(match[0]);
+                            lastIndex = regex.lastIndex;
+                        }
+                        if (lastIndex < part.length) {
+                            sentences.push(part.substring(lastIndex));
+                        }
+                    }
+                }
+            } catch (e) {
+                const partsFallback = text.split(/(\$\$[\s\S]*?\$\$)/);
+                for (let part of partsFallback) {
+                    if (!part) continue;
+                    if (part.startsWith('$$') && part.endsWith('$$')) {
+                        sentences.push(part);
+                    } else {
+                        const subParts = part.match(/[^.!?]+[.!?]*|\s+/g) || [part];
+                        sentences.push(...subParts);
+                    }
+                }
+            }
+            return sentences.filter(s => s.trim());
+        }
+
         function wrapSentences(text) {
             if (!text) return '';
             text = formatNumberedEquations(text);
@@ -1327,6 +1393,9 @@
                 let idx = 0;
                 return sentences.map(s => {
                     if (!s.trim()) return s;
+                    if (s.startsWith('$$') && s.endsWith('$$')) {
+                        return `<div class="hover-sentence" data-idx="${idx++}">${s}</div>`;
+                    }
                     return `<span class="hover-sentence" data-idx="${idx++}">${s}</span>`;
                 }).join('');
             } catch (e) {
@@ -1346,6 +1415,9 @@
                 let idx = 0;
                 return sentences.map(p => {
                     if (!p.trim()) return p;
+                    if (p.startsWith('$$') && p.endsWith('$$')) {
+                        return `<div class="hover-sentence" data-idx="${idx++}">${p}</div>`;
+                    }
                     return `<span class="hover-sentence" data-idx="${idx++}">${p}</span>`;
                 }).join('');
             }
@@ -2140,6 +2212,8 @@ MANDATORY FORMAT:
             --card-bg: #ffffff;
             --card-border: rgba(0, 0, 0, 0.06);
             --nav-bg: rgba(255, 255, 255, 0.8);
+            --box-bg: rgba(0, 0, 0, 0.02);
+            --box-border: rgba(15, 23, 42, 0.75);
             --highlight-bg: rgba(234, 179, 8, 0.4);
             --highlight-text: #000000;
         }
@@ -2153,6 +2227,8 @@ MANDATORY FORMAT:
             --card-bg: #001f3f;
             --card-border: rgba(255, 255, 255, 0.15);
             --nav-bg: rgba(0, 31, 63, 0.85);
+            --box-bg: #001f3f;
+            --box-border: rgba(234, 179, 8, 0.6);
             --highlight-bg: rgba(234, 179, 8, 0.5);
             --highlight-text: #ffffff;
         }
@@ -2190,8 +2266,14 @@ MANDATORY FORMAT:
         .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; position: relative; z-index: 1; }
         .app-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         
-        .box { padding: 20px; margin-bottom: 25px; border-bottom: 1px solid var(--card-border); transition: 0.3s; }
-        .box:last-child { border-bottom: none; }
+        .box {
+            background: var(--box-bg);
+            border: 1.5px solid var(--box-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: 0.3s;
+        }
         .box.marked { background: rgba(16, 185, 129, 0.08) !important; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3) !important; }
         
         .box-header { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px; }
@@ -2204,7 +2286,7 @@ MANDATORY FORMAT:
         body[data-theme="dark"] .mark-btn { background: rgba(255,255,255,0.05); }
         .mark-btn.active { background: #10b981; color: white; border-color: #10b981; }
 
-        .source { color: var(--text-muted); margin-bottom: 15px; font-size: 0.95rem; line-height: 1.6; }
+        .source { color: var(--text-muted); margin-bottom: 15px; font-size: 0.95rem; line-height: 1.6; padding-bottom: 12px; border-bottom: 2px dashed var(--box-border); }
         .target { font-weight: 500; color: var(--text-main); font-size: 1.05rem; line-height: 1.6; }
         .label { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
         .label.en { background: rgba(71, 85, 105, 0.1); color: var(--text-muted); }
@@ -2214,6 +2296,31 @@ MANDATORY FORMAT:
         .hover-sentence.highlight { background: var(--highlight-bg) !important; color: var(--highlight-text) !important; }
         .hover-sentence.selection-hover { background: rgba(16, 185, 129, 0.15) !important; }
         .hover-sentence.pinned-selection { background: #10b981 !important; color: white !important; }
+
+        table {
+            margin: 25px auto !important;
+            border-collapse: collapse !important;
+            width: 95% !important;
+            max-width: 100% !important;
+            background: var(--card-bg) !important;
+            border: 1.5px solid var(--box-border) !important;
+        }
+
+        th, td {
+            padding: 10px 15px !important;
+            border: 1px solid var(--box-border) !important;
+            text-align: center !important;
+            color: var(--text-main) !important;
+        }
+
+        th {
+            background: rgba(13, 148, 136, 0.1) !important;
+            font-weight: 600 !important;
+        }
+
+        body[data-theme="dark"] th {
+            background: rgba(34, 211, 238, 0.15) !important;
+        }
 
         footer { text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.85rem; }
 
@@ -2304,6 +2411,53 @@ MANDATORY FORMAT:
         const docId = '${docId}';
         const rawResults = ${JSON.stringify(bilingualResults).replace(/`/g, '\\`').replace(/\${/g, '\\${').replace(/<\/script>/gi, '<\\/script>')};
         let isHighlightEnabled = true;
+
+        function formatNumberedEquations(text) {
+            if (!text) return text;
+            let res = text.replace(/\\$([^$]+?)\\$\\s*\\(\\s*([A-Za-z0-9\\.\\-]+)\\s*\\)/g, '$$$$ $1 \\\\tag{$2} $$$$');
+            res = res.replace(/\\(\\s*([A-Za-z0-9\\.\\-]+)\\s*\\)\\s*\\$([^$]+?)\\$/g, '$$$$ $2 \\\\tag{$1} $$$$');
+            res = res.replace(/\\$([^$]+?)\\s*\\(\\s*([A-Za-z0-9\\.\\-]+)\\s*\\)\\s*\\$/g, '$$$$ $1 \\\\tag{$2} $$$$');
+            return res;
+        }
+
+        function splitTextIntoSentences(text) {
+            if (!text) return [];
+            text = formatNumberedEquations(text);
+            let sentences = [];
+            try {
+                const parts = text.split(/(\\$\\$[\\s\\S]*?\\$\\$)/);
+                const regex = /.*?[.!?](?=\\s+\\p{Lu}|\\s*$)/gsu;
+                for (let part of parts) {
+                    if (!part) continue;
+                    if (part.startsWith('$$') && part.endsWith('$$')) {
+                        sentences.push(part);
+                    } else {
+                        let lastIndex = 0;
+                        let match;
+                        regex.lastIndex = 0;
+                        while ((match = regex.exec(part)) !== null) {
+                            sentences.push(match[0]);
+                            lastIndex = regex.lastIndex;
+                        }
+                        if (lastIndex < part.length) {
+                            sentences.push(part.substring(lastIndex));
+                        }
+                    }
+                }
+            } catch (e) {
+                const partsFallback = text.split(/(\\$\\$[\\s\\S]*?\\$\\$)/);
+                for (let part of partsFallback) {
+                    if (!part) continue;
+                    if (part.startsWith('$$') && part.endsWith('$$')) {
+                        sentences.push(part);
+                    } else {
+                        const subParts = part.match(/[^.!?]+[.!?]*|\\s+/g) || [part];
+                        sentences.push(...subParts);
+                    }
+                }
+            }
+            return sentences.filter(s => s.trim());
+        }
         let isSelectionMode = false;
         let pinnedElements = [];
 
@@ -2385,7 +2539,7 @@ MANDATORY FORMAT:
                 const data = rawResults[boxIndex];
                 if (data) {
                     const baseText = isSource ? data.source : data.target;
-                    const sentences = baseText.match(/.*?[.!?](?=\\s+\\p{Lu}|\\s*$)|.+/gsu) || [baseText];
+                    const sentences = splitTextIntoSentences(baseText);
                     fullText += (fullText ? " " : "") + (sentences[idxInBox] || el.innerText).trim();
                 } else {
                     fullText += (fullText ? " " : "") + el.innerText.trim();
