@@ -1735,6 +1735,13 @@
 
             // 3. Dọn dẹp các cụm [công thức] lặp lại hoặc thừa khoảng trắng
             cleaned = cleaned.replace(/(\s*\[công thức\]\s*)+/g, ' [công thức] ');
+
+            // 4. Lọc bỏ các ký tự lạ (chỉ giữ lại chữ tiếng Anh, tiếng Việt, số, khoảng trắng và các ký tự đặc biệt thông dụng)
+            cleaned = cleaned.replace(/[^a-zA-Z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ\s!@#\$%\^&\*\(\)_\-\+=\~\`\[\]\{\}\|\\:;"'<>\,\.\?\/]/g, ' ');
+
+            // 5. Thu gọn khoảng trắng thừa do thay thế ký tự lạ bằng khoảng trắng
+            cleaned = cleaned.replace(/[ \t]+/g, ' ');
+
             return cleaned.trim();
         }
 

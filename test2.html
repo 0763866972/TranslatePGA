@@ -1718,23 +1718,30 @@
         function cleanGoogleSpecificMath(text) {
             if (!text) return '';
             let cleaned = text;
-            
+
             // 1. Thay thế các khối công thức chuẩn $$...$$ và $...$
             cleaned = cleaned.replace(/\$\$.*?\$\$/g, ' [công thức] ');
             cleaned = cleaned.replace(/\$.*?\$/g, ' [công thức] ');
-            
+
             // 2. Thay thế toàn bộ cụm từ liền nhau (không chứa khoảng trắng) có chứa ký tự lỗi/Toán học đặc biệt
             // - Ký tự surrogate pairs đại diện cho các ký tự Toán học (plane 1 range: U+1D400 - U+1D7FF)
             cleaned = cleaned.replace(/[^\s]*[\ud835][\udc00-\udfff][^\s]*/g, ' [công thức] ');
-            
+
             // - Ký tự Private Use Area (PUA) hoặc Replacement character
             cleaned = cleaned.replace(/[^\s]*[\uE000-\uF8FF\uFFFD][^\s]*/g, ' [công thức] ');
-            
+
             // - Ký tự Toán học bổ trợ, song song, mũi tên, dấu tack, hộp vuông đặc/rỗng, dingbats
             cleaned = cleaned.replace(/[^\s]*[\u2016\u2AEA\u2200-\u22FF\u2190-\u21FF\u2900-\u29FF\u2A00-\u2AFF\u2B00-\u2BFF\u25A0-\u25FF\u2700-\u27BF][^\s]*/g, ' [công thức] ');
-            
+
             // 3. Dọn dẹp các cụm [công thức] lặp lại hoặc thừa khoảng trắng
             cleaned = cleaned.replace(/(\s*\[công thức\]\s*)+/g, ' [công thức] ');
+
+            // 4. Lọc bỏ các ký tự lạ (chỉ giữ lại chữ tiếng Anh, tiếng Việt, số, khoảng trắng và các ký tự đặc biệt thông dụng)
+            cleaned = cleaned.replace(/[^a-zA-Z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ\s!@#\$%\^&\*\(\)_\-\+=\~\`\[\]\{\}\|\\:;"'<>\,\.\?\/]/g, ' ');
+
+            // 5. Thu gọn khoảng trắng thừa do thay thế ký tự lạ bằng khoảng trắng
+            cleaned = cleaned.replace(/[ \t]+/g, ' ');
+
             return cleaned.trim();
         }
 
