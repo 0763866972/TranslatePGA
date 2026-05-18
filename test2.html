@@ -341,7 +341,8 @@
         }
 
         .get-key-link {
-            color: #eab308 !important; /* Màu vàng sang trọng dễ nhìn */
+            color: #eab308 !important;
+            /* Màu vàng sang trọng dễ nhìn */
             text-decoration: underline;
             margin-left: 6px;
             font-weight: 600;
@@ -349,7 +350,8 @@
         }
 
         .get-key-link:hover {
-            color: #facc15 !important; /* Vàng sáng rực rỡ khi hover */
+            color: #facc15 !important;
+            /* Vàng sáng rực rỡ khi hover */
             text-decoration: none;
         }
 
@@ -807,19 +809,28 @@
                 <!-- Google Translate Document Instruction -->
                 <div class="google-doc-auth" id="google-doc-key-box"
                     style="display: none; background: rgba(26, 115, 232, 0.05); border: 1px dashed #1a73e8; border-radius: 12px; padding: 20px; margin-bottom: 20px; animation: fadeIn 0.3s ease forwards;">
-                    <label style="color: #1a73e8; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                    <label
+                        style="color: #1a73e8; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
                         <i class="fa-solid fa-file-pdf"></i> Dịch file giữ nguyên bố cục (Google Documents)
                     </label>
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6;">
-                        Chức năng này sẽ tự động chuyển hướng bạn sang trang dịch thuật tài liệu chính thức của Google Translate với các tùy chọn ngôn ngữ đã chọn sẵn.
+                        Chức năng này sẽ tự động chuyển hướng bạn sang trang dịch thuật tài liệu chính thức của Google
+                        Translate với các tùy chọn ngôn ngữ đã chọn sẵn.
                     </p>
-                    <ul style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 15px; margin-left: 20px; line-height: 1.6;">
-                        <li><strong>Dịch toàn tệp tin:</strong> Hỗ trợ .pdf, .docx, .pptx, .xlsx hoàn toàn miễn phí.</li>
-                        <li><strong>Bảo toàn bố cục:</strong> Bản dịch sẽ xuất ra file PDF/Word có vị trí hình ảnh, font chữ giống hệt bản gốc.</li>
-                        <li><strong>Không cần API Key:</strong> Dịch trực tiếp từ hệ thống của Google không lo hết hạn ngạch.</li>
+                    <ul
+                        style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 15px; margin-left: 20px; line-height: 1.6;">
+                        <li><strong>Dịch toàn tệp tin:</strong> Hỗ trợ .pdf, .docx, .pptx, .xlsx hoàn toàn miễn phí.
+                        </li>
+                        <li><strong>Bảo toàn bố cục:</strong> Bản dịch sẽ xuất ra file PDF/Word có vị trí hình ảnh, font
+                            chữ giống hệt bản gốc.</li>
+                        <li><strong>Không cần API Key:</strong> Dịch trực tiếp từ hệ thống của Google không lo hết hạn
+                            ngạch.</li>
                     </ul>
-                    <div style="font-size: 0.8rem; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 8px; border-left: 3px solid #1a73e8; color: var(--text-muted);">
-                        <i class="fa-solid fa-circle-info"></i> <strong>Hướng dẫn:</strong> Bấm nút <strong>"Mở Google Translate Documents"</strong> bên dưới. Khi trang mới mở ra, bạn chỉ cần tải tệp lên và bấm <strong>"Dịch" (Translate)</strong>.
+                    <div
+                        style="font-size: 0.8rem; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 8px; border-left: 3px solid #1a73e8; color: var(--text-muted);">
+                        <i class="fa-solid fa-circle-info"></i> <strong>Hướng dẫn:</strong> Bấm nút <strong>"Mở Google
+                            Translate Documents"</strong> bên dưới. Khi trang mới mở ra, bạn chỉ cần tải tệp lên và bấm
+                        <strong>"Dịch" (Translate)</strong>.
                     </div>
                 </div>
 
@@ -852,7 +863,10 @@
 
                     <!-- Custom Page Exceptions Section -->
                     <div id="exception-container" style="margin-top: 5px;"></div>
-                    <button type="button" onclick="addExceptionRow()" style="background: transparent; border: 1px dashed var(--primary); color: var(--primary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; margin-top: 5px; margin-bottom: 12px; width: 100%; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;" onmouseover="this.style.background='rgba(13, 148, 136, 0.1)'" onmouseout="this.style.background='transparent'">
+                    <button type="button" onclick="addExceptionRow()"
+                        style="background: transparent; border: 1px dashed var(--primary); color: var(--primary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; margin-top: 5px; margin-bottom: 12px; width: 100%; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;"
+                        onmouseover="this.style.background='rgba(13, 148, 136, 0.1)'"
+                        onmouseout="this.style.background='transparent'">
                         <i class="fa-solid fa-plus-circle"></i> Thêm lề riêng cho trang đặc biệt
                     </button>
 
@@ -1021,7 +1035,7 @@
             const googleDocBox = document.getElementById('google-doc-key-box');
             const filterControls = document.querySelector('.filter-controls');
             const translateBtn = document.getElementById('translate-btn');
-            
+
             const isGemini = engine.startsWith('gemini');
             const isGoogleDoc = engine === 'google-doc';
 
@@ -1486,7 +1500,7 @@
                     // Xác định xem trang có bố cục 2 cột song song hay không
                     let leftCount = 0;
                     let rightCount = 0;
-                    
+
                     for (let item of items) {
                         const centerX = item.x + item.width / 2;
                         // Không tính các khối đi ngang qua chính giữa trang (như tiêu đề rộng)
@@ -1496,20 +1510,20 @@
                             else rightCount++;
                         }
                     }
-                    
+
                     // Nếu cả hai bên cột đều có lượng chữ đáng kể, đây là trang chia 2 cột
                     const isTwoColumn = leftCount > 6 && rightCount > 6;
-                    
+
                     let sortedItems = [];
                     if (isTwoColumn) {
                         const headerItems = [];
                         const leftItems = [];
                         const rightItems = [];
-                        
+
                         for (let item of items) {
                             const isCrossing = item.x < midX - 40 && (item.x + item.width) > midX + 40;
                             const centerX = item.x + item.width / 2;
-                            
+
                             if (isCrossing) {
                                 headerItems.push(item);
                             } else {
@@ -1520,7 +1534,7 @@
                                 }
                             }
                         }
-                        
+
                         // Hàm sắp xếp tự nhiên: Từ trên xuống dưới (Y giảm dần), cùng hàng thì từ trái sang phải (X tăng dần)
                         const sortNatural = (arr) => {
                             arr.sort((a, b) => {
@@ -1530,11 +1544,11 @@
                                 return a.x - b.x; // Bên trái xếp trước
                             });
                         };
-                        
+
                         sortNatural(headerItems);
                         sortNatural(leftItems);
                         sortNatural(rightItems);
-                        
+
                         // Ghép lại theo thứ tự đọc chuẩn học thuật: Tiêu đề/Full-width -> Cột trái -> Cột phải
                         sortedItems = [...headerItems, ...leftItems, ...rightItems];
                     } else {
@@ -1547,7 +1561,7 @@
                             return a.x - b.x;
                         });
                     }
-                    
+
                     // Ghép chữ từ danh sách các ký tự đã được phân tích bố cục hoàn hảo
                     let lastY = -1;
                     for (let item of sortedItems) {
@@ -1704,9 +1718,22 @@
         function cleanGoogleSpecificMath(text) {
             if (!text) return '';
             let cleaned = text;
+            
+            // 1. Thay thế các khối công thức chuẩn $$...$$ và $...$
             cleaned = cleaned.replace(/\$\$.*?\$\$/g, ' [công thức] ');
             cleaned = cleaned.replace(/\$.*?\$/g, ' [công thức] ');
-            cleaned = cleaned.replace(/(?:[\u2200-\u22FF\u2190-\u21FF\u2700-\u27BF][\s]*){2,}/g, ' [công thức] ');
+            
+            // 2. Thay thế toàn bộ cụm từ liền nhau (không chứa khoảng trắng) có chứa ký tự lỗi/Toán học đặc biệt
+            // - Ký tự surrogate pairs đại diện cho các ký tự Toán học (plane 1 range: U+1D400 - U+1D7FF)
+            cleaned = cleaned.replace(/[^\s]*[\ud835][\udc00-\udfff][^\s]*/g, ' [công thức] ');
+            
+            // - Ký tự Private Use Area (PUA) hoặc Replacement character
+            cleaned = cleaned.replace(/[^\s]*[\uE000-\uF8FF\uFFFD][^\s]*/g, ' [công thức] ');
+            
+            // - Ký tự Toán học bổ trợ, song song, mũi tên, dấu tack, hộp vuông đặc/rỗng, dingbats
+            cleaned = cleaned.replace(/[^\s]*[\u2016\u2AEA\u2200-\u22FF\u2190-\u21FF\u2900-\u29FF\u2A00-\u2AFF\u2B00-\u2BFF\u25A0-\u25FF\u2700-\u27BF][^\s]*/g, ' [công thức] ');
+            
+            // 3. Dọn dẹp các cụm [công thức] lặp lại hoặc thừa khoảng trắng
             cleaned = cleaned.replace(/(\s*\[công thức\]\s*)+/g, ' [công thức] ');
             return cleaned.trim();
         }
@@ -1744,8 +1771,7 @@
             const langMap = { 'en': 'English', 'vi': 'Vietnamese' };
             const targetLang = langMap[tl] || tl;
             const sourceLangText = langMap[sl] || (sl === 'auto' ? 'original' : sl);
-            
-            let systemPrompt = `You are a world-class academic translator and LaTeX expert.
+            const systemPrompt = `You are a world-class academic translator and LaTeX expert.
 TASK: 
 1. Repair the ${sourceLangText} source text by converting math/variables into LaTeX $...$.
 2. Translate the text into ${targetLang} while preserving LaTeX.
@@ -1755,31 +1781,7 @@ ABSOLUTE RULES:
 - DO NOT IGNORE "Abstract", "Index Terms", "Keywords", author names, or any metadata. 
 - You MUST provide the full translation for every part of the text provided.
 - If you leave the TRANSLATION section empty or skip parts, the system will fail.
-- Do NOT output [SKIP] under any circumstances.`;
-
-            if (tl === 'en') {
-                systemPrompt += `
-
-ACADEMIC WRITING STYLE INSTRUCTIONS (Directly inspired by "English for Writing Research Papers" by Adrian Wallwork):
-As the target language is English, you MUST apply these strict academic style rules to ensure a journal-ready publication standard:
-1. CLARITY & BREVITY: Keep sentences short, simple, and direct. The average sentence length should be 15–20 words. Absolutely break up long sentences (over 25 words) into two or more independent, clear sentences.
-2. ACTIVE VOICE: Use active voice when describing the authors' actions, decisions, and findings (e.g., write "We calculated the optimal values using..." instead of "The optimal values were calculated by us using...", "We observed that..." instead of "It was observed that...").
-3. AVOID NOMINALIZATION: Avoid using nouns where a verb is much more direct and powerful (e.g., use "analyze" instead of "conduct an analysis", "evaluate" instead of "perform an evaluation", "improve" instead of "achieve improvement").
-4. AVOID REDUNDANCY & WORDINESS: Eliminate empty filler phrases. Replace wordy clauses with simple, high-impact alternatives:
-   - "due to the fact that" -> "because"
-   - "in spite of the fact that" / "notwithstanding the fact that" -> "although"
-   - "in order to" -> "to"
-   - "at the present time" -> "now" or "currently"
-   - "with the exception of" -> "except"
-   - "utilize" / "make use of" -> "use"
-   - "demonstrate" / "showcase" -> "show" or "present"
-5. DIRECT SENTENCE STRUCTURE: Place the subject and the verb as close as possible to the beginning of the sentence. Avoid starting with long introductory adverbial clauses or passive filler introductory phrases like "It is important to note that..." or "It is interesting to point out that...". Start directly with the core message.
-6. NO NOUN STACKING: Avoid stringing three or more nouns together (e.g., instead of "air pollution control system efficiency", write "efficiency of the air pollution control system").
-7. PRECISE WORD CHOICE: Avoid vague words like "very", "extremely", "highly", "bad", "nice". Replace them with exact quantitative metrics or more professional academic descriptors.
-8. LATEX INTEGRITY: Preserve all LaTeX formulas, mathematical terms ($...$, $$...$$, equations) exactly as they are. Make sure the English grammar flows naturally around the mathematical placeholders.`;
-            }
-
-            systemPrompt += `
+- Do NOT output [SKIP] under any circumstances.
 
 MANDATORY FORMAT:
 ---FIXED_SOURCE---
@@ -1840,7 +1842,7 @@ MANDATORY FORMAT:
         async function startTranslation() {
             const myTranslationId = ++currentTranslationId;
             const engine = document.getElementById('engine-select').value;
-            
+
             if (engine === 'google-doc') {
                 const sl = document.getElementById('source-lang').value;
                 const tl = document.getElementById('target-lang').value;
@@ -2806,9 +2808,9 @@ MANDATORY FORMAT:
             const row = document.createElement('div');
             row.className = 'exception-row';
             row.style.cssText = 'display: flex; gap: 8px; align-items: center; margin-top: 8px; background: rgba(255, 255, 255, 0.03); padding: 8px; border-radius: 8px; border: 1px solid var(--card-border);';
-            
+
             const maxPlaceholder = totalPdfPages > 0 ? `1-${totalPdfPages}` : 'Trang';
-            
+
             row.innerHTML = `
                 <div style="position: relative; flex: 1.5; display: flex; align-items: center;">
                     <input type="text" class="exc-pages" placeholder="${maxPlaceholder}" oninput="validatePageInput(this)" style="width: 100%; padding: 6px 20px 6px 6px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-size: 0.8rem; text-align: center;" required>
@@ -2831,7 +2833,7 @@ MANDATORY FORMAT:
                 input.value = val;
                 return;
             }
-            
+
             const parts = val.split(',');
             const validatedParts = [];
             for (let part of parts) {
@@ -2881,16 +2883,16 @@ MANDATORY FORMAT:
                 validatePageInput(input);
                 return;
             }
-            
+
             // Tìm cụm số cuối cùng trong chuỗi để tăng/giảm
-            const regex = /(\d+)(?!.*\d)/; 
+            const regex = /(\d+)(?!.*\d)/;
             const match = val.match(regex);
             if (match) {
                 const lastNum = parseInt(match[1]);
                 let nextNum = direction === 'up' ? lastNum + 1 : lastNum - 1;
                 if (nextNum < 1) nextNum = 1;
                 if (totalPdfPages > 0 && nextNum > totalPdfPages) nextNum = totalPdfPages;
-                
+
                 // Thay thế số cuối cùng bằng số mới
                 input.value = val.substring(0, match.index) + nextNum + val.substring(match.index + match[1].length);
             } else {
