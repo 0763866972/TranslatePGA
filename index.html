@@ -1285,30 +1285,66 @@
             }
         }
 
+        function formatNumberedEquations(text) {
+            if (!text) return text;
+            let res = text.replace(/\$([^$]+?)\$\s*\(\s*([A-Za-z0-9\.\-]+)\s*\)/g, '$$$$ $1 \\tag{$2} $$$$');
+            res = res.replace(/\(\s*([A-Za-z0-9\.\-]+)\s*\)\s*\$([^$]+?)\$/g, '$$$$ $2 \\tag{$1} $$$$');
+            res = res.replace(/\$([^$]+?)\s*\(\s*([A-Za-z0-9\.\-]+)\s*\)\s*\$/g, '$$$$ $1 \\tag{$2} $$$$');
+            return res;
+        }
+
         function wrapSentences(text) {
             if (!text) return '';
+            text = formatNumberedEquations(text);
             try {
-                // Phân tách câu dựa trên dấu chấm, hỏi, chấm than theo sau là khoảng trắng và chữ hoa.
-                const regex = /.*?[.!?](?=\s+\p{Lu}|\s*$)/gsu;
+                // Tách text thành các khối: Công thức block (giữ nguyên) và Văn bản thường
+                const parts = text.split(/(\$\$[\s\S]*?\$\$)/);
+
                 let sentences = [];
-                let lastIndex = 0;
-                let match;
-                while ((match = regex.exec(text)) !== null) {
-                    sentences.push(match[0]);
-                    lastIndex = regex.lastIndex;
+                const regex = /.*?[.!?](?=\s+\p{Lu}|\s*$)/gsu;
+
+                for (let part of parts) {
+                    if (!part) continue;
+
+                    // Nếu là công thức block, tách riêng thành 1 chunk
+                    if (part.startsWith('$$') && part.endsWith('$$')) {
+                        sentences.push(part);
+                    } else {
+                        // Nếu là văn bản thường, tách thành từng câu
+                        let lastIndex = 0;
+                        let match;
+                        regex.lastIndex = 0;
+                        while ((match = regex.exec(part)) !== null) {
+                            sentences.push(match[0]);
+                            lastIndex = regex.lastIndex;
+                        }
+                        if (lastIndex < part.length) {
+                            sentences.push(part.substring(lastIndex));
+                        }
+                    }
                 }
-                if (lastIndex < text.length) {
-                    sentences.push(text.substring(lastIndex));
-                }
-                if (sentences.length === 0) return text;
 
                 let idx = 0;
-                return sentences.map(s => `<span class="hover-sentence" data-idx="${idx++}">${s}</span>`).join('');
+                return sentences.map(s => {
+                    if (!s.trim()) return s;
+                    return `<span class="hover-sentence" data-idx="${idx++}">${s}</span>`;
+                }).join('');
             } catch (e) {
                 // Fallback nếu trình duyệt cũ
-                const parts = text.match(/[^.!?]+[.!?]*|\s+/g) || [text];
+                const parts = text.split(/(\$\$[\s\S]*?\$\$)/);
+                let sentences = [];
+                for (let part of parts) {
+                    if (!part) continue;
+                    if (part.startsWith('$$') && part.endsWith('$$')) {
+                        sentences.push(part);
+                    } else {
+                        const subParts = part.match(/[^.!?]+[.!?]*|\s+/g) || [part];
+                        sentences.push(...subParts);
+                    }
+                }
+
                 let idx = 0;
-                return parts.map(p => {
+                return sentences.map(p => {
                     if (!p.trim()) return p;
                     return `<span class="hover-sentence" data-idx="${idx++}">${p}</span>`;
                 }).join('');
@@ -1780,7 +1816,7 @@
             const sourceLangText = langMap[sl] || (sl === 'auto' ? 'original' : sl);
             const systemPrompt = `You are a world-class academic translator and LaTeX expert.
 TASK: 
-1. Repair the ${sourceLangText} source text by converting math/variables into LaTeX $...$.
+1. Repair the ${sourceLangText} source text by converting inline math/variables into LaTeX $...$ and standalone/numbered equations into block LaTeX $$...$$. (If an equation has a number like (1), include it as $$... \\tag{1}$$).
 2. Translate the text into ${targetLang} while preserving LaTeX.
 
 ABSOLUTE RULES:
@@ -2388,10 +2424,15 @@ MANDATORY FORMAT:
 
         async function convertToMathML(text) {
             if (!window.MathJax || !window.MathJax.tex2mmlPromise) return '<p>' + text + '</p>';
-            const parts = text.split(/(\\$.*?\\$)/g);
+            const parts = text.split(/(\\$\\$.*?\\$\\$|\\$.*?\\$)/g);
             let res = "";
             for (let p of parts) {
-                if (p.startsWith('$') && p.endsWith('$')) {
+                if (p.startsWith('$$') && p.endsWith('$$')) {
+                    try {
+                        let mml = await MathJax.tex2mmlPromise(p.slice(2, -2), { display: true });
+                        res += mml.replace(/>\\s+</g, '><').trim();
+                    } catch (e) { res += p; }
+                } else if (p.startsWith('$') && p.endsWith('$')) {
                     try {
                         let mml = await MathJax.tex2mmlPromise(p.slice(1, -1), { display: false });
                         res += mml.replace(/>\\s+</g, '><').trim();
@@ -2620,17 +2661,24 @@ MANDATORY FORMAT:
                 return `<p>${text}</p>`;
             }
 
-            // Tách các đoạn LaTeX $...$
-            const parts = text.split(/(\$.*?\$)/g);
+            // Tách các đoạn LaTeX $$...$$ và $...$
+            const parts = text.split(/(\$\$.*?\$\$|\$.*?\$)/g);
             let htmlResult = "";
 
             for (let part of parts) {
-                if (part.startsWith('$') && part.endsWith('$')) {
+                if (part.startsWith('$$') && part.endsWith('$$')) {
+                    const tex = part.slice(2, -2);
+                    try {
+                        let mml = await MathJax.tex2mmlPromise(tex, { display: true });
+                        mml = mml.replace(/>\s+</g, '><').trim();
+                        htmlResult += mml;
+                    } catch (e) {
+                        htmlResult += part;
+                    }
+                } else if (part.startsWith('$') && part.endsWith('$')) {
                     const tex = part.slice(1, -1);
                     try {
-                        // Bắt buộc dùng inline math (display: false) để không bị nhảy dòng
                         let mml = await MathJax.tex2mmlPromise(tex, { display: false });
-                        // Loại bỏ các khoảng trắng/xuống dòng thừa trong mã MML
                         mml = mml.replace(/>\s+</g, '><').trim();
                         htmlResult += mml;
                     } catch (e) {
