@@ -3660,6 +3660,13 @@ MANDATORY FORMAT:
                     badge.textContent = pinnedElements.length;
                     badge.style.display = 'flex';
                 }
+                
+                // Kích hoạt MathJax cho khu vực Đang chọn để hỏi
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    setTimeout(() => {
+                        window.MathJax.typesetPromise([contextText]).catch(err => console.error('MathJax error:', err));
+                    }, 50);
+                }
             } else {
                 contextArea.style.display = 'none';
                 contextText.textContent = '';
@@ -3708,11 +3715,26 @@ MANDATORY FORMAT:
         function parseMarkdown(text) {
             if (!text) return '';
             let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            
+            // Xử lý Tiêu đề (Headers)
+            html = html.replace(/^### (.*$)/gim, '<h4 style="margin: 8px 0; color: var(--primary);">$1</h4>');
+            html = html.replace(/^## (.*$)/gim, '<h3 style="margin: 10px 0; color: var(--primary);">$1</h3>');
+            html = html.replace(/^# (.*$)/gim, '<h2 style="margin: 12px 0; color: var(--primary);">$1</h2>');
+
+            // Xử lý Danh sách dạng bullet
+            html = html.replace(/^[\*\-] (.*$)/gim, '<div style="display: list-item; list-style-type: disc; margin-left: 20px;">$1</div>');
+            
+            // Xử lý In đậm / In nghiêng
             html = html.replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>');
             html = html.replace(/\*([\s\S]*?)\*/g, '<em>$1</em>');
+            
+            // Xử lý Code blocks
             html = html.replace(/```([\s\S]*?)```/g, '<pre style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; overflow-x: auto; margin: 5px 0;"><code>$1</code></pre>');
             html = html.replace(/`([^`]+)`/g, '<code style="background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; color: #ef4444;">$1</code>');
+            
+            // Xử lý xuống dòng và dọn dẹp các <br> thừa sau block elements
             html = html.replace(/\n/g, '<br>');
+            html = html.replace(/(<\/h[2-4]>|<\/div>)<br>/gi, '$1');
             return html;
         }
 
