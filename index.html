@@ -60,6 +60,9 @@
             --box-border: rgba(15, 23, 42, 0.75);
             --highlight-bg: rgba(234, 179, 8, 0.4);
             --highlight-text: #000000;
+            --scrollbar-track: rgba(0, 0, 0, 0.05);
+            --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+            --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
         }
 
         body[data-theme="dark"] {
@@ -78,6 +81,9 @@
             --box-border: rgba(234, 179, 8, 0.6);
             --highlight-bg: rgba(234, 179, 8, 0.5);
             --highlight-text: #ffffff;
+            --scrollbar-track: rgba(255, 255, 255, 0.05);
+            --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+            --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
         }
 
         * {
@@ -523,13 +529,17 @@
         }
 
         .bilingual-output::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--scrollbar-track);
             border-radius: 4px;
         }
 
         .bilingual-output::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
+            background: var(--scrollbar-thumb);
             border-radius: 4px;
+        }
+
+        .bilingual-output::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover);
         }
 
         .hover-sentence {
@@ -734,6 +744,80 @@
             font-size: 0.9rem;
             border-top: 1px solid var(--card-border);
             margin-top: 40px;
+        }
+
+        .page-marker {
+            position: absolute;
+            left: 0;
+            width: 8px;
+            height: 4px;
+            background-color: #fbbf24;
+            border-radius: 2px;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+            z-index: 100;
+        }
+
+        .page-marker:hover {
+            transform: scale(1.5);
+            background-color: var(--primary);
+        }
+
+        .page-marker::after {
+            content: attr(data-page);
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ffffff;
+            color: #000000;
+            padding: 3px 6px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+            border: 1px solid #111;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .page-marker::before {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%) rotate(45deg);
+            width: 8px;
+            height: 8px;
+            background: #ffffff;
+            border-bottom: 1px solid #111;
+            border-left: 1px solid #111;
+            box-shadow: -2px 2px 5px rgba(251, 191, 36, 0.4);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            pointer-events: none;
+            z-index: 99;
+        }
+
+        .page-marker:hover::after,
+        .page-marker:hover::before {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        body[data-theme="dark"] .page-marker::after,
+        body[data-theme="dark"] .page-marker::before {
+            background: #1e293b;
+            color: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
         }
     </style>
 </head>
@@ -972,7 +1056,12 @@
                     <div class="progress-bar" id="progress-bar"></div>
                 </div>
 
-                <div class="bilingual-output" id="bilingual-output"></div>
+                <div style="position: relative; width: 100%;">
+                    <div class="bilingual-output" id="bilingual-output"></div>
+                    <div id="scrollbar-markers"
+                        style="position: absolute; right: -12px; top: 0; bottom: 0; width: 8px; pointer-events: none; z-index: 10;">
+                    </div>
+                </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button class="btn-outline warning" id="pause-btn" onclick="togglePause()"
@@ -990,6 +1079,43 @@
     </div>
 
     <script>
+        function updateScrollbarMarkers() {
+            const outputDiv = document.getElementById('bilingual-output');
+            const markersContainer = document.getElementById('scrollbar-markers');
+            if (!outputDiv || !markersContainer) return;
+            if (markersContainer.style.display === 'none') return;
+
+            markersContainer.innerHTML = '';
+
+            const totalScrollHeight = outputDiv.scrollHeight;
+            const clientHeight = outputDiv.clientHeight;
+            if (totalScrollHeight <= clientHeight) return;
+
+            const dividers = outputDiv.querySelectorAll('.page-divider');
+            dividers.forEach(divider => {
+                const topPos = divider.offsetTop;
+                const percentage = (topPos / totalScrollHeight) * 100;
+
+                const marker = document.createElement('div');
+                marker.className = 'page-marker';
+                marker.style.top = `calc(${percentage}% - 2px)`;
+
+                const pageText = divider.textContent.trim();
+                let cleanPageText = pageText.split('/')[0].trim().replace(/TRANG/i, 'Page');
+                marker.setAttribute('data-page', cleanPageText);
+
+                marker.onclick = () => {
+                    outputDiv.scrollTo({ top: divider.offsetTop - 10, behavior: 'smooth' });
+                };
+
+                markersContainer.appendChild(marker);
+            });
+        }
+
+        window.addEventListener('resize', () => {
+            if (document.getElementById('bilingual-output')) updateScrollbarMarkers();
+        });
+
         function toggleFullscreen() {
             const appCard = document.querySelector('.app-card');
             const icon = document.querySelector('#fullscreen-btn i');
@@ -1043,17 +1169,24 @@
             const downloadBtn = document.getElementById('download-btn');
             const statusText = document.getElementById('status-text');
 
+            const markersContainer = document.getElementById('scrollbar-markers');
+
             if (isPaused) {
                 text.textContent = 'Tiếp tục';
                 icon.className = 'fa-solid fa-play';
                 statusText.innerHTML = '<i class="fa-solid fa-circle-pause"></i> Đã tạm dừng dịch thuật';
                 // Hiện nút tải xuống ngay khi tạm dừng để người dùng lấy file sớm
                 downloadBtn.style.display = 'flex';
+                if (markersContainer) {
+                    markersContainer.style.display = 'block';
+                    updateScrollbarMarkers();
+                }
             } else {
                 text.textContent = 'Tạm dừng';
                 icon.className = 'fa-solid fa-pause';
                 statusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tiếp tục dịch...';
                 // Ẩn nếu chưa hoàn thành (thực tế nút vẫn có thể hiển thị nếu muốn cho phép tải từng phần)
+                if (markersContainer) markersContainer.style.display = 'none';
             }
         }
 
@@ -2028,6 +2161,8 @@ MANDATORY FORMAT:
                 document.getElementById('pause-text').textContent = "Tạm dừng";
                 document.getElementById('pause-btn').querySelector('i').className = "fa-solid fa-pause";
                 document.getElementById('download-btn').style.display = 'none';
+                const markersContainer = document.getElementById('scrollbar-markers');
+                if (markersContainer) markersContainer.style.display = 'none';
 
                 for (let i = 0; i < chunks.length; i++) {
                     if (myTranslationId !== currentTranslationId) return; // Hủy quá trình này nếu đã có quá trình khác thay thế
@@ -2052,6 +2187,7 @@ MANDATORY FORMAT:
                         divider.className = 'page-divider';
                         divider.innerHTML = `<i class="fa-solid fa-file-invoice"></i> TRANG ${pageNum} / ${totalPdfPages || '?'}`;
                         outputDiv.appendChild(divider);
+                        setTimeout(updateScrollbarMarkers, 50);
                     }
 
                     // Làm sạch trước các ký tự ô vuông hỏng cho tất cả các bản dịch
@@ -2141,6 +2277,7 @@ MANDATORY FORMAT:
                         if (!isUserScrollingUp) {
                             outputDiv.scrollTop = outputDiv.scrollHeight;
                         }
+                        updateScrollbarMarkers();
 
                         // Render MathJax for the newly added content với một chút delay để DOM ổn định
                         setTimeout(() => {
@@ -2150,6 +2287,7 @@ MANDATORY FORMAT:
                                     if (!isUserScrollingUp) {
                                         outputDiv.scrollTop = outputDiv.scrollHeight;
                                     }
+                                    updateScrollbarMarkers();
                                 }).catch(err => console.error('MathJax error:', err));
                             }
                         }, 100);
@@ -2170,6 +2308,10 @@ MANDATORY FORMAT:
                 statusText.textContent = "Tuyệt vời! Dịch thuật hoàn tất.";
                 document.getElementById('pause-btn').style.display = 'none';
                 document.getElementById('download-btn').style.display = 'block';
+                if (markersContainer) {
+                    markersContainer.style.display = 'block';
+                    updateScrollbarMarkers();
+                }
 
             } catch (error) {
                 console.error(error);
@@ -2345,6 +2487,80 @@ MANDATORY FORMAT:
             border-color: var(--primary);
             color: var(--primary);
         }
+
+        .page-marker {
+            position: absolute;
+            left: 0;
+            width: 8px;
+            height: 4px;
+            background-color: #fbbf24;
+            border-radius: 2px;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 0 3px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            z-index: 100;
+        }
+
+        .page-marker:hover {
+            transform: scale(1.5);
+            background-color: var(--primary);
+        }
+
+        .page-marker::after {
+            content: attr(data-page);
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ffffff;
+            color: #000000;
+            padding: 3px 6px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+            border: 1px solid #111;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .page-marker::before {
+            content: '';
+            position: absolute;
+            right: 11px;
+            top: 50%;
+            transform: translateY(-50%) rotate(45deg);
+            width: 8px;
+            height: 8px;
+            background: #ffffff;
+            border-top: 1px solid #111;
+            border-right: 1px solid #111;
+            box-shadow: 2px -2px 5px rgba(251, 191, 36, 0.4);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            pointer-events: none;
+            z-index: 99;
+        }
+
+        .page-marker:hover::after,
+        .page-marker:hover::before {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        body[data-theme="dark"] .page-marker::after,
+        body[data-theme="dark"] .page-marker::before {
+            background: #1e293b;
+            color: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
+        }
     </style>
 </head>
 <body data-theme="${currentTheme}">
@@ -2406,6 +2622,7 @@ MANDATORY FORMAT:
             </div>
         </div>
     </div>
+    <div id="scrollbar-markers" style="position: fixed; right: 4px; top: 0; bottom: 0; width: 8px; pointer-events: none; z-index: 9999;"></div>
     <footer>© 2024 SciTranslate - Design by Phan Gia An</footer>
 
     <script>
@@ -2620,6 +2837,39 @@ MANDATORY FORMAT:
                     btn.innerHTML = '✅ Đã đọc';
                 }
             });
+            
+            function updateScrollbarMarkers() {
+                const markersContainer = document.getElementById('scrollbar-markers');
+                if (!markersContainer) return;
+                markersContainer.innerHTML = '';
+                
+                const totalScrollHeight = document.documentElement.scrollHeight;
+                const clientHeight = document.documentElement.clientHeight;
+                if (totalScrollHeight <= clientHeight) return;
+                
+                const dividers = document.querySelectorAll('.page-divider-download');
+                dividers.forEach(divider => {
+                    const absoluteTop = divider.getBoundingClientRect().top + window.scrollY;
+                    const percentage = (absoluteTop / totalScrollHeight) * 100;
+                    
+                    const marker = document.createElement('div');
+                    marker.className = 'page-marker';
+                    marker.style.top = 'clamp(85px, calc(' + percentage + '% - 2px), calc(100% - 15px))';
+                    
+                    const pageText = divider.textContent.trim();
+                    let cleanPageText = pageText.split('/')[0].trim().replace(/TRANG/i, 'Page');
+                    marker.setAttribute('data-page', cleanPageText);
+                    
+                    marker.onclick = () => {
+                        window.scrollTo({ top: divider.offsetTop - 10, behavior: 'smooth' });
+                    };
+                    
+                    markersContainer.appendChild(marker);
+                });
+            }
+            
+            updateScrollbarMarkers();
+            window.addEventListener('resize', updateScrollbarMarkers);
         });
     <\/script>
 </body>
