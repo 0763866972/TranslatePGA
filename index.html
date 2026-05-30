@@ -1092,9 +1092,16 @@
             if (totalScrollHeight <= clientHeight) return;
 
             const dividers = outputDiv.querySelectorAll('.page-divider');
+            let lastMarkerPercent = -10;
             dividers.forEach(divider => {
                 const topPos = divider.offsetTop;
-                const percentage = (topPos / totalScrollHeight) * 100;
+                let percentage = (topPos / totalScrollHeight) * 100;
+                const minDiff = (18 / clientHeight) * 100; // Khoảng cách tối thiểu 18px để không đè nhau
+
+                if (percentage - lastMarkerPercent < minDiff) {
+                    percentage = lastMarkerPercent + minDiff;
+                }
+                lastMarkerPercent = percentage;
 
                 const marker = document.createElement('div');
                 marker.className = 'page-marker';
@@ -1373,6 +1380,7 @@
                         } else {
                             copyBtn.style.display = 'none';
                         }
+                        if (typeof updatePinnedContext === 'function') updatePinnedContext();
                     }
                 });
             }
@@ -1386,6 +1394,7 @@
                 copyBtn.style.display = 'none';
                 copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy Đã Chọn';
             }
+            if (typeof updatePinnedContext === 'function') updatePinnedContext();
         }
 
         async function copyPinnedSegment() {
@@ -2114,6 +2123,9 @@ MANDATORY FORMAT:
             settingsArea.style.display = 'none';
             liveArea.style.display = 'block';
 
+            const chatBtn = document.getElementById('ai-chat-btn');
+            if (chatBtn) chatBtn.style.display = isGemini ? 'flex' : 'none';
+
             const statusText = document.getElementById('status-text');
             // Reset state
             outputDiv.innerHTML = '';
@@ -2622,7 +2634,7 @@ MANDATORY FORMAT:
             </div>
         </div>
     </div>
-    <div id="scrollbar-markers" style="position: fixed; right: 4px; top: 0; bottom: 0; width: 8px; pointer-events: none; z-index: 9999;"></div>
+    <div id="scrollbar-markers" style="position: fixed; right: 4px; top: 85px; bottom: 15px; width: 8px; pointer-events: none; z-index: 9999;"></div>
     <footer>© 2024 SciTranslate - Design by Phan Gia An</footer>
 
     <script>
@@ -2848,13 +2860,20 @@ MANDATORY FORMAT:
                 if (totalScrollHeight <= clientHeight) return;
                 
                 const dividers = document.querySelectorAll('.page-divider-download');
+                let lastMarkerPercent = -10;
                 dividers.forEach(divider => {
                     const absoluteTop = divider.getBoundingClientRect().top + window.scrollY;
-                    const percentage = (absoluteTop / totalScrollHeight) * 100;
+                    let percentage = (absoluteTop / totalScrollHeight) * 100;
+                    const minDiff = (18 / clientHeight) * 100; // Khoảng cách tối thiểu 18px
+                    
+                    if (percentage - lastMarkerPercent < minDiff) {
+                        percentage = lastMarkerPercent + minDiff;
+                    }
+                    lastMarkerPercent = percentage;
                     
                     const marker = document.createElement('div');
                     marker.className = 'page-marker';
-                    marker.style.top = 'clamp(85px, calc(' + percentage + '% - 2px), calc(100% - 15px))';
+                    marker.style.top = 'calc(' + percentage + '% - 2px)';
                     
                     const pageText = divider.textContent.trim();
                     let cleanPageText = pageText.split('/')[0].trim().replace(/TRANG/i, 'Page');
@@ -3394,6 +3413,386 @@ MANDATORY FORMAT:
             </div>
         </div>
     </div>
+
+    <!-- CHATBOT AI UI -->
+    <style id="chatbot-style">
+        .chat-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 55px;
+            height: 55px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(13, 148, 136, 0.5);
+            z-index: 10000;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .chat-btn:hover {
+            transform: scale(1.15) rotate(5deg);
+        }
+
+        .chat-window {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 380px;
+            height: 550px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            z-index: 10001;
+            overflow: hidden;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .chat-header {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: #fff;
+            padding: 15px 20px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-context {
+            padding: 12px 20px;
+            background: var(--highlight-bg);
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        #chat-context-text {
+            font-size: 0.85rem;
+            color: var(--text-main);
+            font-style: italic;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 15px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: var(--box-bg);
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .ai-message {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .user-message {
+            background: var(--primary);
+            color: #fff;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+        }
+
+        .chat-input-area {
+            padding: 15px;
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            gap: 10px;
+            background: var(--card-bg);
+            align-items: center;
+        }
+
+        .chat-input-area textarea {
+            flex: 1;
+            background: var(--box-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            color: var(--text-main);
+            padding: 10px 15px;
+            resize: none;
+            height: 45px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .chat-input-area textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2);
+        }
+
+        .chat-input-area button {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .chat-input-area button:hover {
+            transform: scale(1.05);
+            background: var(--secondary);
+        }
+
+        .message.loading {
+            color: var(--text-muted);
+            font-style: italic;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+    </style>
+
+    <div id="ai-chat-btn" class="chat-btn" onclick="toggleChat()" style="display: none;" title="Mở trợ lý AI">
+        <i class="fa-solid fa-robot"></i>
+        <div id="ai-chat-badge"
+            style="display: none; position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 0.75rem; font-weight: bold; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+        </div>
+    </div>
+
+    <div id="ai-chat-window" class="chat-window" style="display: none;">
+        <div class="chat-header">
+            <span><i class="fa-solid fa-robot" style="margin-right:8px;"></i> Trợ lý Dịch Thuật AI</span>
+            <button onclick="toggleChat()"
+                style="background:none; border:none; color:white; cursor:pointer; font-size:1.2rem;"><i
+                    class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="chat-context" id="chat-context-area" style="display: none;">
+            <div style="font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; font-weight: 600;"><i
+                    class="fa-solid fa-paperclip"></i> ĐANG CHỌN ĐỂ HỎI:</div>
+            <div id="chat-context-text"></div>
+            <div style="text-align: right;">
+                <button onclick="clearPinned()"
+                    style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:0.75rem; margin-top:5px; font-weight:600;"><i
+                        class="fa-solid fa-xmark"></i> Hủy chọn</button>
+            </div>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="message ai-message">Xin chào! Tôi đã đọc hiểu tài liệu này. Bạn muốn hỏi gì? (Bạn có thể nhấp
+                vào các đoạn văn trên màn hình để chọn nhanh ngữ cảnh cần hỏi).</div>
+        </div>
+        <div class="chat-input-area">
+            <textarea id="chat-input" placeholder="Nhập câu hỏi... (Enter để gửi)"
+                onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendChatMessage(); }"></textarea>
+            <button onclick="sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <script>
+        function getPinnedTextForChat() {
+            if (pinnedElements.length === 0) return "";
+            let fullText = "";
+            for (let el of pinnedElements) {
+                const box = el.closest('.bilingual-box');
+                if (!box) continue;
+                const index = parseInt(box.id.replace('web-box-', ''));
+                const data = bilingualResults[index];
+                const idxInBox = parseInt(el.getAttribute('data-idx'));
+                if (data) {
+                    const isSource = el.closest('.source-container');
+                    const text = isSource ? data.source : data.target;
+                    const sentences = splitTextIntoSentences(text);
+                    fullText += (fullText ? " " : "") + (sentences[idxInBox] || el.innerText).trim();
+                } else {
+                    fullText += (fullText ? " " : "") + el.innerText.trim();
+                }
+            }
+            return fullText;
+        }
+
+        function updatePinnedContext() {
+            const contextArea = document.getElementById('chat-context-area');
+            const contextText = document.getElementById('chat-context-text');
+            const badge = document.getElementById('ai-chat-badge');
+
+            if (!contextArea) return;
+            const text = getPinnedTextForChat();
+            if (text) {
+                contextText.textContent = text;
+                contextArea.style.display = 'block';
+                if (badge) {
+                    badge.textContent = pinnedElements.length;
+                    badge.style.display = 'flex';
+                }
+            } else {
+                contextArea.style.display = 'none';
+                contextText.textContent = '';
+                if (badge) badge.style.display = 'none';
+            }
+        }
+
+        let isChatOpen = false;
+
+        // Ẩn chat khi click ra ngoài
+        document.addEventListener('mousedown', function (event) {
+            const chatWindow = document.getElementById('ai-chat-window');
+            const chatBtn = document.getElementById('ai-chat-btn');
+            if (isChatOpen && chatWindow && chatBtn) {
+                if (!chatWindow.contains(event.target) && !chatBtn.contains(event.target)) {
+                    toggleChat();
+                }
+            }
+        });
+
+        function toggleChat() {
+            isChatOpen = !isChatOpen;
+            const chatBtn = document.getElementById('ai-chat-btn');
+            const chatWindow = document.getElementById('ai-chat-window');
+            if (isChatOpen) {
+                chatWindow.style.display = 'flex';
+                chatBtn.style.transform = 'scale(0)';
+                document.getElementById('chat-input').focus();
+            } else {
+                chatWindow.style.display = 'none';
+                chatBtn.style.transform = 'scale(1)';
+            }
+        }
+
+        function appendChatMessage(sender, text, isHtml = false) {
+            const msgs = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `message ${sender === 'ai' ? 'ai-message' : 'user-message'}`;
+            if (isHtml) div.innerHTML = text;
+            else div.textContent = text;
+            msgs.appendChild(div);
+            msgs.scrollTop = msgs.scrollHeight;
+            return div;
+        }
+
+        function parseMarkdown(text) {
+            if (!text) return '';
+            let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            html = html.replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*([\s\S]*?)\*/g, '<em>$1</em>');
+            html = html.replace(/```([\s\S]*?)```/g, '<pre style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; overflow-x: auto; margin: 5px 0;"><code>$1</code></pre>');
+            html = html.replace(/`([^`]+)`/g, '<code style="background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; color: #ef4444;">$1</code>');
+            html = html.replace(/\n/g, '<br>');
+            return html;
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = '';
+
+            const pinnedText = getPinnedTextForChat();
+            const fullContext = bilingualResults.map(r => r.source + '\n' + r.target).join('\n\n');
+
+            appendChatMessage('user', text);
+            const loadingMsg = appendChatMessage('ai', '<i class="fa-solid fa-spinner fa-spin"></i> Đang suy nghĩ...', true);
+            loadingMsg.classList.add('loading');
+
+            try {
+                const apiKeysString = localStorage.getItem('gemini_api_key');
+                if (!apiKeysString) throw new Error("Chưa có API Key của Gemini!");
+
+                const keyList = apiKeysString.split(',').map(k => k.trim()).filter(k => k);
+                if (typeof window.currentApiKeyIndex === 'undefined') window.currentApiKeyIndex = 0;
+                const apiKey = keyList[window.currentApiKeyIndex % keyList.length];
+                window.currentApiKeyIndex++;
+
+                let systemInstruction = "Bạn là trợ lý AI thông minh hỗ trợ phân tích tài liệu dịch thuật. Bạn phải trả lời bằng tiếng Việt. Dưới đây là toàn bộ tài liệu song ngữ (Gốc + Dịch). Hãy dùng nó làm ngữ cảnh để trả lời câu hỏi của người dùng.";
+                let prompt = `NỘI DUNG TÀI LIỆU:\n${fullContext.substring(0, 80000)}\n\n`;
+                if (pinnedText) {
+                    prompt += `NGƯỜI DÙNG ĐANG HỎI CỤ THỂ VỀ ĐOẠN NÀY TRONG TÀI LIỆU:\n"${pinnedText}"\n\n`;
+                }
+                prompt += `CÂU HỎI CỦA NGƯỜI DÙNG:\n${text}`;
+
+                const body = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    system_instruction: { parts: [{ text: systemInstruction }] },
+                    generationConfig: { temperature: 0.3 }
+                };
+
+                const engineSelect = document.getElementById('engine-select');
+                let selectedModel = engineSelect ? engineSelect.value : 'gemini-1.5-flash-latest';
+                if (!selectedModel.startsWith('gemini')) {
+                    selectedModel = 'gemini-1.5-flash-latest'; // Fallback nếu đang dùng Google
+                }
+
+                let url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
+                let response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.error?.message || "Lỗi kết nối tới Gemini API");
+                }
+
+                const data = await response.json();
+                const reply = data.candidates[0].content.parts[0].text;
+
+                loadingMsg.classList.remove('loading');
+                loadingMsg.innerHTML = parseMarkdown(reply);
+
+                // Kích hoạt MathJax để render công thức toán học (nếu có)
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    setTimeout(() => {
+                        window.MathJax.typesetPromise([loadingMsg]).catch(err => console.error('MathJax error:', err));
+                    }, 50);
+                }
+
+                // Tự động bỏ chọn (unpin) sau khi hỏi xong
+                if (pinnedElements.length > 0) {
+                    clearPinned();
+                }
+            } catch (err) {
+                loadingMsg.classList.remove('loading');
+                loadingMsg.innerHTML = `<span style="color:#ef4444"><i class="fa-solid fa-triangle-exclamation"></i> Lỗi: ${err.message}</span>`;
+            }
+        }
+    </script>
 </body>
 
 </html>

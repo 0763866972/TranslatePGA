@@ -57,8 +57,12 @@
             --upload-bg: rgba(0, 0, 0, 0.02);
             --upload-border: rgba(0, 0, 0, 0.1);
             --box-bg: rgba(0, 0, 0, 0.02);
+            --box-border: rgba(15, 23, 42, 0.75);
             --highlight-bg: rgba(234, 179, 8, 0.4);
             --highlight-text: #000000;
+            --scrollbar-track: rgba(0, 0, 0, 0.05);
+            --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+            --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
         }
 
         body[data-theme="dark"] {
@@ -74,8 +78,12 @@
             --upload-bg: rgba(0, 31, 63, 0.4);
             --upload-border: rgba(255, 255, 255, 0.5);
             --box-bg: #001f3f;
+            --box-border: rgba(234, 179, 8, 0.6);
             --highlight-bg: rgba(234, 179, 8, 0.5);
             --highlight-text: #ffffff;
+            --scrollbar-track: rgba(255, 255, 255, 0.05);
+            --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+            --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
         }
 
         * {
@@ -521,13 +529,17 @@
         }
 
         .bilingual-output::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--scrollbar-track);
             border-radius: 4px;
         }
 
         .bilingual-output::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
+            background: var(--scrollbar-thumb);
             border-radius: 4px;
+        }
+
+        .bilingual-output::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover);
         }
 
         .hover-sentence {
@@ -643,7 +655,7 @@
 
         .bilingual-box {
             background: var(--box-bg);
-            border: 1px solid var(--card-border);
+            border: 1.5px solid var(--box-border);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 15px;
@@ -656,7 +668,7 @@
             line-height: 1.6;
             margin-bottom: 12px;
             padding-bottom: 12px;
-            border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+            border-bottom: 2px dashed var(--box-border);
             text-align: justify;
             white-space: pre-wrap;
         }
@@ -695,6 +707,32 @@
             transform: translateY(-2px);
         }
 
+        table {
+            margin: 25px auto !important;
+            border-collapse: collapse !important;
+            width: 95% !important;
+            max-width: 100% !important;
+            background: var(--card-bg) !important;
+            border: 1.5px solid var(--box-border) !important;
+        }
+
+        th,
+        td {
+            padding: 10px 15px !important;
+            border: 1px solid var(--box-border) !important;
+            text-align: center !important;
+            color: var(--text-main) !important;
+        }
+
+        th {
+            background: rgba(13, 148, 136, 0.1) !important;
+            font-weight: 600 !important;
+        }
+
+        body[data-theme="dark"] th {
+            background: rgba(34, 211, 238, 0.15) !important;
+        }
+
         .error-text {
             color: #ef4444;
         }
@@ -706,6 +744,80 @@
             font-size: 0.9rem;
             border-top: 1px solid var(--card-border);
             margin-top: 40px;
+        }
+
+        .page-marker {
+            position: absolute;
+            left: 0;
+            width: 8px;
+            height: 4px;
+            background-color: #fbbf24;
+            border-radius: 2px;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+            z-index: 100;
+        }
+
+        .page-marker:hover {
+            transform: scale(1.5);
+            background-color: var(--primary);
+        }
+
+        .page-marker::after {
+            content: attr(data-page);
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ffffff;
+            color: #000000;
+            padding: 3px 6px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+            border: 1px solid #111;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .page-marker::before {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%) rotate(45deg);
+            width: 8px;
+            height: 8px;
+            background: #ffffff;
+            border-bottom: 1px solid #111;
+            border-left: 1px solid #111;
+            box-shadow: -2px 2px 5px rgba(251, 191, 36, 0.4);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            pointer-events: none;
+            z-index: 99;
+        }
+
+        .page-marker:hover::after,
+        .page-marker:hover::before {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        body[data-theme="dark"] .page-marker::after,
+        body[data-theme="dark"] .page-marker::before {
+            background: #1e293b;
+            color: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
         }
     </style>
 </head>
@@ -944,7 +1056,12 @@
                     <div class="progress-bar" id="progress-bar"></div>
                 </div>
 
-                <div class="bilingual-output" id="bilingual-output"></div>
+                <div style="position: relative; width: 100%;">
+                    <div class="bilingual-output" id="bilingual-output"></div>
+                    <div id="scrollbar-markers"
+                        style="position: absolute; right: -12px; top: 0; bottom: 0; width: 8px; pointer-events: none; z-index: 10;">
+                    </div>
+                </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button class="btn-outline warning" id="pause-btn" onclick="togglePause()"
@@ -962,6 +1079,43 @@
     </div>
 
     <script>
+        function updateScrollbarMarkers() {
+            const outputDiv = document.getElementById('bilingual-output');
+            const markersContainer = document.getElementById('scrollbar-markers');
+            if (!outputDiv || !markersContainer) return;
+            if (markersContainer.style.display === 'none') return;
+
+            markersContainer.innerHTML = '';
+
+            const totalScrollHeight = outputDiv.scrollHeight;
+            const clientHeight = outputDiv.clientHeight;
+            if (totalScrollHeight <= clientHeight) return;
+
+            const dividers = outputDiv.querySelectorAll('.page-divider');
+            dividers.forEach(divider => {
+                const topPos = divider.offsetTop;
+                const percentage = (topPos / totalScrollHeight) * 100;
+
+                const marker = document.createElement('div');
+                marker.className = 'page-marker';
+                marker.style.top = `calc(${percentage}% - 2px)`;
+
+                const pageText = divider.textContent.trim();
+                let cleanPageText = pageText.split('/')[0].trim().replace(/TRANG/i, 'Page');
+                marker.setAttribute('data-page', cleanPageText);
+
+                marker.onclick = () => {
+                    outputDiv.scrollTo({ top: divider.offsetTop - 10, behavior: 'smooth' });
+                };
+
+                markersContainer.appendChild(marker);
+            });
+        }
+
+        window.addEventListener('resize', () => {
+            if (document.getElementById('bilingual-output')) updateScrollbarMarkers();
+        });
+
         function toggleFullscreen() {
             const appCard = document.querySelector('.app-card');
             const icon = document.querySelector('#fullscreen-btn i');
@@ -1015,17 +1169,24 @@
             const downloadBtn = document.getElementById('download-btn');
             const statusText = document.getElementById('status-text');
 
+            const markersContainer = document.getElementById('scrollbar-markers');
+
             if (isPaused) {
                 text.textContent = 'Tiếp tục';
                 icon.className = 'fa-solid fa-play';
                 statusText.innerHTML = '<i class="fa-solid fa-circle-pause"></i> Đã tạm dừng dịch thuật';
                 // Hiện nút tải xuống ngay khi tạm dừng để người dùng lấy file sớm
                 downloadBtn.style.display = 'flex';
+                if (markersContainer) {
+                    markersContainer.style.display = 'block';
+                    updateScrollbarMarkers();
+                }
             } else {
                 text.textContent = 'Tạm dừng';
                 icon.className = 'fa-solid fa-pause';
                 statusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tiếp tục dịch...';
                 // Ẩn nếu chưa hoàn thành (thực tế nút vẫn có thể hiển thị nếu muốn cho phép tải từng phần)
+                if (markersContainer) markersContainer.style.display = 'none';
             }
         }
 
@@ -1244,7 +1405,7 @@
                 if (data) {
                     const isSource = el.closest('.source-container');
                     const fullText = isSource ? data.source : data.target;
-                    const sentences = fullText.match(/.*?[.!?](?=\s+\p{Lu}|\s*$)|.+/gsu) || [fullText];
+                    const sentences = splitTextIntoSentences(fullText);
                     text = sentences[idxInBox] || el.innerText;
                 } else {
                     text = el.innerText;
@@ -1285,31 +1446,112 @@
             }
         }
 
+        function formatNumberedEquations(text) {
+            if (!text) return text;
+            let res = text.replace(/\$([^$]+?)\$\s*\(\s*([A-Za-z0-9\.\-]+)\s*\)/g, '$$$$ $1 \\tag{$2} $$$$');
+            res = res.replace(/\(\s*([A-Za-z0-9\.\-]+)\s*\)\s*\$([^$]+?)\$/g, '$$$$ $2 \\tag{$1} $$$$');
+            res = res.replace(/\$([^$]+?)\s*\(\s*([A-Za-z0-9\.\-]+)\s*\)\s*\$/g, '$$$$ $1 \\tag{$2} $$$$');
+            return res;
+        }
+
+        function splitTextIntoSentences(text) {
+            if (!text) return [];
+            text = formatNumberedEquations(text);
+            let sentences = [];
+            try {
+                const parts = text.split(/(\$\$[\s\S]*?\$\$)/);
+                const regex = /.*?[.!?](?=\s+\p{Lu}|\s*$)/gsu;
+                for (let part of parts) {
+                    if (!part) continue;
+                    if (part.startsWith('$$') && part.endsWith('$$')) {
+                        sentences.push(part);
+                    } else {
+                        let lastIndex = 0;
+                        let match;
+                        regex.lastIndex = 0;
+                        while ((match = regex.exec(part)) !== null) {
+                            sentences.push(match[0]);
+                            lastIndex = regex.lastIndex;
+                        }
+                        if (lastIndex < part.length) {
+                            sentences.push(part.substring(lastIndex));
+                        }
+                    }
+                }
+            } catch (e) {
+                const partsFallback = text.split(/(\$\$[\s\S]*?\$\$)/);
+                for (let part of partsFallback) {
+                    if (!part) continue;
+                    if (part.startsWith('$$') && part.endsWith('$$')) {
+                        sentences.push(part);
+                    } else {
+                        const subParts = part.match(/[^.!?]+[.!?]*|\s+/g) || [part];
+                        sentences.push(...subParts);
+                    }
+                }
+            }
+            return sentences.filter(s => s.trim());
+        }
+
         function wrapSentences(text) {
             if (!text) return '';
+            text = formatNumberedEquations(text);
             try {
-                // Phân tách câu dựa trên dấu chấm, hỏi, chấm than theo sau là khoảng trắng và chữ hoa.
-                const regex = /.*?[.!?](?=\s+\p{Lu}|\s*$)/gsu;
+                // Tách text thành các khối: Công thức block (giữ nguyên) và Văn bản thường
+                const parts = text.split(/(\$\$[\s\S]*?\$\$)/);
+
                 let sentences = [];
-                let lastIndex = 0;
-                let match;
-                while ((match = regex.exec(text)) !== null) {
-                    sentences.push(match[0]);
-                    lastIndex = regex.lastIndex;
+                const regex = /.*?[.!?](?=\s+\p{Lu}|\s*$)/gsu;
+
+                for (let part of parts) {
+                    if (!part) continue;
+
+                    // Nếu là công thức block, tách riêng thành 1 chunk
+                    if (part.startsWith('$$') && part.endsWith('$$')) {
+                        sentences.push(part);
+                    } else {
+                        // Nếu là văn bản thường, tách thành từng câu
+                        let lastIndex = 0;
+                        let match;
+                        regex.lastIndex = 0;
+                        while ((match = regex.exec(part)) !== null) {
+                            sentences.push(match[0]);
+                            lastIndex = regex.lastIndex;
+                        }
+                        if (lastIndex < part.length) {
+                            sentences.push(part.substring(lastIndex));
+                        }
+                    }
                 }
-                if (lastIndex < text.length) {
-                    sentences.push(text.substring(lastIndex));
-                }
-                if (sentences.length === 0) return text;
 
                 let idx = 0;
-                return sentences.map(s => `<span class="hover-sentence" data-idx="${idx++}">${s}</span>`).join('');
+                return sentences.map(s => {
+                    if (!s.trim()) return s;
+                    if (s.startsWith('$$') && s.endsWith('$$')) {
+                        return `<div class="hover-sentence" data-idx="${idx++}">${s}</div>`;
+                    }
+                    return `<span class="hover-sentence" data-idx="${idx++}">${s}</span>`;
+                }).join('');
             } catch (e) {
                 // Fallback nếu trình duyệt cũ
-                const parts = text.match(/[^.!?]+[.!?]*|\s+/g) || [text];
+                const parts = text.split(/(\$\$[\s\S]*?\$\$)/);
+                let sentences = [];
+                for (let part of parts) {
+                    if (!part) continue;
+                    if (part.startsWith('$$') && part.endsWith('$$')) {
+                        sentences.push(part);
+                    } else {
+                        const subParts = part.match(/[^.!?]+[.!?]*|\s+/g) || [part];
+                        sentences.push(...subParts);
+                    }
+                }
+
                 let idx = 0;
-                return parts.map(p => {
+                return sentences.map(p => {
                     if (!p.trim()) return p;
+                    if (p.startsWith('$$') && p.endsWith('$$')) {
+                        return `<div class="hover-sentence" data-idx="${idx++}">${p}</div>`;
+                    }
                     return `<span class="hover-sentence" data-idx="${idx++}">${p}</span>`;
                 }).join('');
             }
@@ -1780,7 +2022,7 @@
             const sourceLangText = langMap[sl] || (sl === 'auto' ? 'original' : sl);
             const systemPrompt = `You are a world-class academic translator and LaTeX expert.
 TASK: 
-1. Repair the ${sourceLangText} source text by converting math/variables into LaTeX $...$.
+1. Repair the ${sourceLangText} source text by converting inline math/variables into LaTeX $...$ and standalone/numbered equations into block LaTeX $$...$$. (If an equation has a number like (1), include it as $$... \\tag{1}$$).
 2. Translate the text into ${targetLang} while preserving LaTeX.
 
 ABSOLUTE RULES:
@@ -1919,6 +2161,8 @@ MANDATORY FORMAT:
                 document.getElementById('pause-text').textContent = "Tạm dừng";
                 document.getElementById('pause-btn').querySelector('i').className = "fa-solid fa-pause";
                 document.getElementById('download-btn').style.display = 'none';
+                const markersContainer = document.getElementById('scrollbar-markers');
+                if (markersContainer) markersContainer.style.display = 'none';
 
                 for (let i = 0; i < chunks.length; i++) {
                     if (myTranslationId !== currentTranslationId) return; // Hủy quá trình này nếu đã có quá trình khác thay thế
@@ -1943,6 +2187,7 @@ MANDATORY FORMAT:
                         divider.className = 'page-divider';
                         divider.innerHTML = `<i class="fa-solid fa-file-invoice"></i> TRANG ${pageNum} / ${totalPdfPages || '?'}`;
                         outputDiv.appendChild(divider);
+                        setTimeout(updateScrollbarMarkers, 50);
                     }
 
                     // Làm sạch trước các ký tự ô vuông hỏng cho tất cả các bản dịch
@@ -2032,6 +2277,7 @@ MANDATORY FORMAT:
                         if (!isUserScrollingUp) {
                             outputDiv.scrollTop = outputDiv.scrollHeight;
                         }
+                        updateScrollbarMarkers();
 
                         // Render MathJax for the newly added content với một chút delay để DOM ổn định
                         setTimeout(() => {
@@ -2041,6 +2287,7 @@ MANDATORY FORMAT:
                                     if (!isUserScrollingUp) {
                                         outputDiv.scrollTop = outputDiv.scrollHeight;
                                     }
+                                    updateScrollbarMarkers();
                                 }).catch(err => console.error('MathJax error:', err));
                             }
                         }, 100);
@@ -2061,6 +2308,10 @@ MANDATORY FORMAT:
                 statusText.textContent = "Tuyệt vời! Dịch thuật hoàn tất.";
                 document.getElementById('pause-btn').style.display = 'none';
                 document.getElementById('download-btn').style.display = 'block';
+                if (markersContainer) {
+                    markersContainer.style.display = 'block';
+                    updateScrollbarMarkers();
+                }
 
             } catch (error) {
                 console.error(error);
@@ -2104,6 +2355,8 @@ MANDATORY FORMAT:
             --card-bg: #ffffff;
             --card-border: rgba(0, 0, 0, 0.06);
             --nav-bg: rgba(255, 255, 255, 0.8);
+            --box-bg: rgba(0, 0, 0, 0.02);
+            --box-border: rgba(15, 23, 42, 0.75);
             --highlight-bg: rgba(234, 179, 8, 0.4);
             --highlight-text: #000000;
         }
@@ -2117,6 +2370,8 @@ MANDATORY FORMAT:
             --card-bg: #001f3f;
             --card-border: rgba(255, 255, 255, 0.15);
             --nav-bg: rgba(0, 31, 63, 0.85);
+            --box-bg: #001f3f;
+            --box-border: rgba(234, 179, 8, 0.6);
             --highlight-bg: rgba(234, 179, 8, 0.5);
             --highlight-text: #ffffff;
         }
@@ -2154,8 +2409,14 @@ MANDATORY FORMAT:
         .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; position: relative; z-index: 1; }
         .app-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         
-        .box { padding: 20px; margin-bottom: 25px; border-bottom: 1px solid var(--card-border); transition: 0.3s; }
-        .box:last-child { border-bottom: none; }
+        .box {
+            background: var(--box-bg);
+            border: 1.5px solid var(--box-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: 0.3s;
+        }
         .box.marked { background: rgba(16, 185, 129, 0.08) !important; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3) !important; }
         
         .box-header { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px; }
@@ -2168,7 +2429,7 @@ MANDATORY FORMAT:
         body[data-theme="dark"] .mark-btn { background: rgba(255,255,255,0.05); }
         .mark-btn.active { background: #10b981; color: white; border-color: #10b981; }
 
-        .source { color: var(--text-muted); margin-bottom: 15px; font-size: 0.95rem; line-height: 1.6; }
+        .source { color: var(--text-muted); margin-bottom: 15px; font-size: 0.95rem; line-height: 1.6; padding-bottom: 12px; border-bottom: 2px dashed var(--box-border); }
         .target { font-weight: 500; color: var(--text-main); font-size: 1.05rem; line-height: 1.6; }
         .label { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
         .label.en { background: rgba(71, 85, 105, 0.1); color: var(--text-muted); }
@@ -2178,6 +2439,31 @@ MANDATORY FORMAT:
         .hover-sentence.highlight { background: var(--highlight-bg) !important; color: var(--highlight-text) !important; }
         .hover-sentence.selection-hover { background: rgba(16, 185, 129, 0.15) !important; }
         .hover-sentence.pinned-selection { background: #10b981 !important; color: white !important; }
+
+        table {
+            margin: 25px auto !important;
+            border-collapse: collapse !important;
+            width: 95% !important;
+            max-width: 100% !important;
+            background: var(--card-bg) !important;
+            border: 1.5px solid var(--box-border) !important;
+        }
+
+        th, td {
+            padding: 10px 15px !important;
+            border: 1px solid var(--box-border) !important;
+            text-align: center !important;
+            color: var(--text-main) !important;
+        }
+
+        th {
+            background: rgba(13, 148, 136, 0.1) !important;
+            font-weight: 600 !important;
+        }
+
+        body[data-theme="dark"] th {
+            background: rgba(34, 211, 238, 0.15) !important;
+        }
 
         footer { text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.85rem; }
 
@@ -2200,6 +2486,80 @@ MANDATORY FORMAT:
             background: rgba(34, 211, 238, 0.06);
             border-color: var(--primary);
             color: var(--primary);
+        }
+
+        .page-marker {
+            position: absolute;
+            left: 0;
+            width: 8px;
+            height: 4px;
+            background-color: #fbbf24;
+            border-radius: 2px;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 0 3px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            z-index: 100;
+        }
+
+        .page-marker:hover {
+            transform: scale(1.5);
+            background-color: var(--primary);
+        }
+
+        .page-marker::after {
+            content: attr(data-page);
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ffffff;
+            color: #000000;
+            padding: 3px 6px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+            border: 1px solid #111;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .page-marker::before {
+            content: '';
+            position: absolute;
+            right: 11px;
+            top: 50%;
+            transform: translateY(-50%) rotate(45deg);
+            width: 8px;
+            height: 8px;
+            background: #ffffff;
+            border-top: 1px solid #111;
+            border-right: 1px solid #111;
+            box-shadow: 2px -2px 5px rgba(251, 191, 36, 0.4);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            pointer-events: none;
+            z-index: 99;
+        }
+
+        .page-marker:hover::after,
+        .page-marker:hover::before {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        body[data-theme="dark"] .page-marker::after,
+        body[data-theme="dark"] .page-marker::before {
+            background: #1e293b;
+            color: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
         }
     </style>
 </head>
@@ -2262,12 +2622,60 @@ MANDATORY FORMAT:
             </div>
         </div>
     </div>
+    <div id="scrollbar-markers" style="position: fixed; right: 4px; top: 0; bottom: 0; width: 8px; pointer-events: none; z-index: 9999;"></div>
     <footer>© 2024 SciTranslate - Design by Phan Gia An</footer>
 
     <script>
         const docId = '${docId}';
         const rawResults = ${JSON.stringify(bilingualResults).replace(/`/g, '\\`').replace(/\${/g, '\\${').replace(/<\/script>/gi, '<\\/script>')};
         let isHighlightEnabled = true;
+
+        function formatNumberedEquations(text) {
+            if (!text) return text;
+            let res = text.replace(/\\$([^$]+?)\\$\\s*\\(\\s*([A-Za-z0-9\\.\\-]+)\\s*\\)/g, '$$$$ $1 \\\\tag{$2} $$$$');
+            res = res.replace(/\\(\\s*([A-Za-z0-9\\.\\-]+)\\s*\\)\\s*\\$([^$]+?)\\$/g, '$$$$ $2 \\\\tag{$1} $$$$');
+            res = res.replace(/\\$([^$]+?)\\s*\\(\\s*([A-Za-z0-9\\.\\-]+)\\s*\\)\\s*\\$/g, '$$$$ $1 \\\\tag{$2} $$$$');
+            return res;
+        }
+
+        function splitTextIntoSentences(text) {
+            if (!text) return [];
+            text = formatNumberedEquations(text);
+            let sentences = [];
+            try {
+                const parts = text.split(/(\\$\\$[\\s\\S]*?\\$\\$)/);
+                const regex = /.*?[.!?](?=\\s+\\p{Lu}|\\s*$)/gsu;
+                for (let part of parts) {
+                    if (!part) continue;
+                    if (part.startsWith('$$') && part.endsWith('$$')) {
+                        sentences.push(part);
+                    } else {
+                        let lastIndex = 0;
+                        let match;
+                        regex.lastIndex = 0;
+                        while ((match = regex.exec(part)) !== null) {
+                            sentences.push(match[0]);
+                            lastIndex = regex.lastIndex;
+                        }
+                        if (lastIndex < part.length) {
+                            sentences.push(part.substring(lastIndex));
+                        }
+                    }
+                }
+            } catch (e) {
+                const partsFallback = text.split(/(\\$\\$[\\s\\S]*?\\$\\$)/);
+                for (let part of partsFallback) {
+                    if (!part) continue;
+                    if (part.startsWith('$$') && part.endsWith('$$')) {
+                        sentences.push(part);
+                    } else {
+                        const subParts = part.match(/[^.!?]+[.!?]*|\\s+/g) || [part];
+                        sentences.push(...subParts);
+                    }
+                }
+            }
+            return sentences.filter(s => s.trim());
+        }
         let isSelectionMode = false;
         let pinnedElements = [];
 
@@ -2349,7 +2757,7 @@ MANDATORY FORMAT:
                 const data = rawResults[boxIndex];
                 if (data) {
                     const baseText = isSource ? data.source : data.target;
-                    const sentences = baseText.match(/.*?[.!?](?=\\s+\\p{Lu}|\\s*$)|.+/gsu) || [baseText];
+                    const sentences = splitTextIntoSentences(baseText);
                     fullText += (fullText ? " " : "") + (sentences[idxInBox] || el.innerText).trim();
                 } else {
                     fullText += (fullText ? " " : "") + el.innerText.trim();
@@ -2388,10 +2796,15 @@ MANDATORY FORMAT:
 
         async function convertToMathML(text) {
             if (!window.MathJax || !window.MathJax.tex2mmlPromise) return '<p>' + text + '</p>';
-            const parts = text.split(/(\\$.*?\\$)/g);
+            const parts = text.split(/(\\$\\$.*?\\$\\$|\\$.*?\\$)/g);
             let res = "";
             for (let p of parts) {
-                if (p.startsWith('$') && p.endsWith('$')) {
+                if (p.startsWith('$$') && p.endsWith('$$')) {
+                    try {
+                        let mml = await MathJax.tex2mmlPromise(p.slice(2, -2), { display: true });
+                        res += mml.replace(/>\\s+</g, '><').trim();
+                    } catch (e) { res += p; }
+                } else if (p.startsWith('$') && p.endsWith('$')) {
                     try {
                         let mml = await MathJax.tex2mmlPromise(p.slice(1, -1), { display: false });
                         res += mml.replace(/>\\s+</g, '><').trim();
@@ -2424,6 +2837,39 @@ MANDATORY FORMAT:
                     btn.innerHTML = '✅ Đã đọc';
                 }
             });
+            
+            function updateScrollbarMarkers() {
+                const markersContainer = document.getElementById('scrollbar-markers');
+                if (!markersContainer) return;
+                markersContainer.innerHTML = '';
+                
+                const totalScrollHeight = document.documentElement.scrollHeight;
+                const clientHeight = document.documentElement.clientHeight;
+                if (totalScrollHeight <= clientHeight) return;
+                
+                const dividers = document.querySelectorAll('.page-divider-download');
+                dividers.forEach(divider => {
+                    const absoluteTop = divider.getBoundingClientRect().top + window.scrollY;
+                    const percentage = (absoluteTop / totalScrollHeight) * 100;
+                    
+                    const marker = document.createElement('div');
+                    marker.className = 'page-marker';
+                    marker.style.top = 'clamp(85px, calc(' + percentage + '% - 2px), calc(100% - 15px))';
+                    
+                    const pageText = divider.textContent.trim();
+                    let cleanPageText = pageText.split('/')[0].trim().replace(/TRANG/i, 'Page');
+                    marker.setAttribute('data-page', cleanPageText);
+                    
+                    marker.onclick = () => {
+                        window.scrollTo({ top: divider.offsetTop - 10, behavior: 'smooth' });
+                    };
+                    
+                    markersContainer.appendChild(marker);
+                });
+            }
+            
+            updateScrollbarMarkers();
+            window.addEventListener('resize', updateScrollbarMarkers);
         });
     <\/script>
 </body>
@@ -2620,17 +3066,24 @@ MANDATORY FORMAT:
                 return `<p>${text}</p>`;
             }
 
-            // Tách các đoạn LaTeX $...$
-            const parts = text.split(/(\$.*?\$)/g);
+            // Tách các đoạn LaTeX $$...$$ và $...$
+            const parts = text.split(/(\$\$.*?\$\$|\$.*?\$)/g);
             let htmlResult = "";
 
             for (let part of parts) {
-                if (part.startsWith('$') && part.endsWith('$')) {
+                if (part.startsWith('$$') && part.endsWith('$$')) {
+                    const tex = part.slice(2, -2);
+                    try {
+                        let mml = await MathJax.tex2mmlPromise(tex, { display: true });
+                        mml = mml.replace(/>\s+</g, '><').trim();
+                        htmlResult += mml;
+                    } catch (e) {
+                        htmlResult += part;
+                    }
+                } else if (part.startsWith('$') && part.endsWith('$')) {
                     const tex = part.slice(1, -1);
                     try {
-                        // Bắt buộc dùng inline math (display: false) để không bị nhảy dòng
                         let mml = await MathJax.tex2mmlPromise(tex, { display: false });
-                        // Loại bỏ các khoảng trắng/xuống dòng thừa trong mã MML
                         mml = mml.replace(/>\s+</g, '><').trim();
                         htmlResult += mml;
                     } catch (e) {
