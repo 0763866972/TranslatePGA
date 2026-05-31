@@ -3513,6 +3513,7 @@ MANDATORY FORMAT:
             font-size: 0.95rem;
             line-height: 1.5;
             word-wrap: break-word;
+            overflow-x: auto;
         }
 
         .ai-message {
@@ -3717,6 +3718,9 @@ MANDATORY FORMAT:
             let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             
             // Xử lý Tiêu đề (Headers)
+            html = html.replace(/^###### (.*$)/gim, '<h6 style="margin: 6px 0; color: var(--primary);">$1</h6>');
+            html = html.replace(/^##### (.*$)/gim, '<h5 style="margin: 6px 0; color: var(--primary);">$1</h5>');
+            html = html.replace(/^#### (.*$)/gim, '<h5 style="margin: 8px 0; color: var(--primary);">$1</h5>');
             html = html.replace(/^### (.*$)/gim, '<h4 style="margin: 8px 0; color: var(--primary);">$1</h4>');
             html = html.replace(/^## (.*$)/gim, '<h3 style="margin: 10px 0; color: var(--primary);">$1</h3>');
             html = html.replace(/^# (.*$)/gim, '<h2 style="margin: 12px 0; color: var(--primary);">$1</h2>');
@@ -3734,7 +3738,7 @@ MANDATORY FORMAT:
             
             // Xử lý xuống dòng và dọn dẹp các <br> thừa sau block elements
             html = html.replace(/\n/g, '<br>');
-            html = html.replace(/(<\/h[2-4]>|<\/div>)<br>/gi, '$1');
+            html = html.replace(/(<\/h[2-6]>|<\/div>)<br>/gi, '$1');
             return html;
         }
 
