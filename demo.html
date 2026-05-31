@@ -488,6 +488,8 @@
             max-height: 500px;
             overflow-y: auto;
             padding-right: 10px;
+            position: relative;
+            scroll-behavior: smooth;
         }
 
         .fullscreen-mode {
@@ -643,14 +645,19 @@
             gap: 10px;
             margin: 35px 0 15px 0;
             padding: 10px;
-            background: rgba(13, 148, 136, 0.08);
+            background: rgba(13, 148, 136, 0.95);
+            backdrop-filter: blur(5px);
             border: 1px dashed var(--primary);
             border-radius: 8px;
-            color: var(--primary);
+            color: #ffffff;
             font-weight: 700;
             font-size: 0.9rem;
             letter-spacing: 1px;
             animation: fadeIn 0.3s ease;
+            position: sticky;
+            top: -1px;
+            z-index: 50;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
         .bilingual-box {
@@ -1003,6 +1010,15 @@
                     </button>
                 </div>
 
+                <!-- Processing Mode Selection -->
+                <label class="form-label">⚙️ Chế độ xử lý</label>
+                <div class="lang-group" style="margin-bottom: 20px;">
+                    <select class="lang-select" id="process-mode" style="width: 100%;" onchange="toggleProcessMode()">
+                        <option value="bilingual">Dịch Song Ngữ (Tự động dịch toàn bộ tài liệu)</option>
+                        <option value="reading">Đọc Hiểu (Chỉ dịch từng đoạn khi yêu cầu - Tiết kiệm lượt API)</option>
+                    </select>
+                </div>
+
                 <!-- Language Selection -->
                 <label class="form-label">🌍 Ngôn ngữ</label>
                 <div class="lang-group">
@@ -1241,6 +1257,36 @@
                 if (translateBtn) {
                     translateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Bắt đầu Trích xuất & Dịch';
                     translateBtn.style.background = '';
+                }
+            }
+        }
+
+        function toggleProcessMode() {
+            const mode = document.getElementById('process-mode').value;
+            const engineSelect = document.getElementById('engine-select');
+            
+            const googleOption = engineSelect.querySelector('option[value="google"]');
+            const googleDocOption = engineSelect.querySelector('option[value="google-doc"]');
+            
+            if (mode === 'reading') {
+                if (googleOption) {
+                    googleOption.style.display = 'none';
+                }
+                if (googleDocOption) {
+                    googleDocOption.style.display = 'none';
+                }
+                
+                // Nếu đang chọn Google, tự động chuyển sang Gemini
+                if (engineSelect.value === 'google' || engineSelect.value === 'google-doc') {
+                    engineSelect.value = 'gemini-3.1-flash-lite';
+                    toggleEngine();
+                }
+            } else {
+                if (googleOption) {
+                    googleOption.style.display = '';
+                }
+                if (googleDocOption) {
+                    googleDocOption.style.display = '';
                 }
             }
         }
@@ -2100,6 +2146,7 @@ MANDATORY FORMAT:
         async function startTranslation() {
             const myTranslationId = ++currentTranslationId;
             const engine = document.getElementById('engine-select').value;
+            const processMode = document.getElementById('process-mode') ? document.getElementById('process-mode').value : 'bilingual';
 
             if (engine === 'google-doc') {
                 const sl = document.getElementById('source-lang').value;
@@ -2213,6 +2260,19 @@ MANDATORY FORMAT:
                     const box = document.createElement('div');
                     box.className = 'bilingual-box';
                     box.id = `web-box-${i}`;
+                    let initialTargetHtml = '';
+                    if (processMode === 'reading') {
+                         initialTargetHtml = `
+                             <button class="retry-btn" style="display:inline-flex; width:auto; border-radius:8px; padding:6px 14px; background:rgba(13,148,136,0.1); color:var(--primary); font-weight:600; border: 1px solid rgba(13,148,136,0.3); transition:all 0.2s;" onclick="this.style.transform='scale(0.95)'; retryChunk(${i}, \`${sourceText.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, 'web-box-${i}')" onmouseover="this.style.background='var(--primary)'; this.style.color='white';" onmouseout="this.style.background='rgba(13,148,136,0.1)'; this.style.color='var(--primary)';">
+                                 <i class="fa-solid fa-language" style="margin-right: 6px;"></i> Dịch đoạn này
+                             </button>
+                         `;
+                         // Khởi tạo trước dữ liệu rỗng cho bản dịch để Chatbot lấy được nguồn
+                         bilingualResults[i] = { source: sourceText, target: "", pageNum: pageNum };
+                    } else {
+                         initialTargetHtml = `<span class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Đang phân tích và dịch...</span>`;
+                    }
+
                     box.innerHTML = `
                         <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 10px;">
                             <button class="mark-web-btn" onclick="toggleWebMark(this)">Đánh dấu đã đọc</button>
@@ -2222,10 +2282,30 @@ MANDATORY FORMAT:
                             <div class="source-text">${wrapSentences(sourceText)}</div>
                         </div>
                         <div class="target-container" style="margin-top: 10px;">
-                            <div class="target-text"><span class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Đang phân tích và dịch...</span></div>
+                            <div class="target-text">${initialTargetHtml}</div>
                         </div>
                     `;
                     outputDiv.appendChild(box);
+
+                    if (processMode === 'reading') {
+                        // Cập nhật MathJax ngay cho phần nguồn
+                        setTimeout(() => {
+                             if (window.MathJax && window.MathJax.typesetPromise) {
+                                 window.MathJax.typesetPromise([box.querySelector('.source-text')]).catch(err => console.error('MathJax error:', err));
+                             }
+                        }, 50);
+                        
+                        const progressPercent = Math.round(((i + 1) / chunks.length) * 100);
+                        const progressBar = document.getElementById('progress-bar');
+                        progressBar.style.width = `${progressPercent}%`;
+                        document.getElementById('progress-text').textContent = `${progressPercent}% (${i + 1}/${chunks.length})`;
+                        
+                        if (progressPercent === 100) {
+                            progressBar.style.background = '#0ea5e9'; 
+                            progressBar.style.boxShadow = '0 0 15px rgba(14, 165, 233, 0.8)';
+                        }
+                        continue;
+                    }
 
                     // Chỉ auto-scroll nếu người dùng KHÔNG cuộn lên
                     if (!isUserScrollingUp) {
@@ -2923,6 +3003,8 @@ MANDATORY FORMAT:
             if (icon) icon.className = savedTheme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
         });
 
+        let translationQueue = Promise.resolve();
+
         async function retryChunk(index, sourceText, boxId) {
             const box = document.getElementById(boxId);
             const targetArea = box.querySelector('.target-text');
@@ -2931,9 +3013,13 @@ MANDATORY FORMAT:
             const sl = document.getElementById('source-lang').value;
             const tl = document.getElementById('target-lang').value;
 
-            targetArea.innerHTML = `<span class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Đang thử lại...</span>`;
+            targetArea.innerHTML = `<span class="loading-text" style="color: var(--primary);"><i class="fa-solid fa-hourglass-half"></i> Đang chờ tới lượt...</span>`;
 
-            const oldPageNum = bilingualResults[index] ? bilingualResults[index].pageNum : null;
+            translationQueue = translationQueue.then(async () => {
+                // Kiểm tra xem user có lỡ bấm dịch lại trong lúc đang chờ không, nếu đang chạy thì báo
+                targetArea.innerHTML = `<span class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Đang phân tích và dịch...</span>`;
+
+                const oldPageNum = bilingualResults[index] ? bilingualResults[index].pageNum : null;
 
             try {
                 let targetText = '';
@@ -2970,15 +3056,19 @@ MANDATORY FORMAT:
 
             } catch (err) {
                 targetArea.innerHTML = `
-                    <span class="error-text">[LỖI THỬ LẠI]: ${err.message}</span>
+                    <span class="error-text">[LỖI]: ${err.message}</span>
                     <button class="retry-btn" onclick="retryChunk(${index}, \`${sourceText.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, '${boxId}')">
                         <i class="fa-solid fa-rotate-right"></i> Thử lại lần nữa
                     </button>
                 `;
             }
-        }
+            
+            // Nghỉ 1 giây giữa các lần dịch để bảo vệ API (Rate Limit)
+            await new Promise(r => setTimeout(r, 1000));
+        });
+    }
 
-        function resetView() {
+    function resetView() {
             currentTranslationId++; // Hủy tiến trình dịch đang chạy ngầm
             // Hiển thị lại vùng tải lên
             document.getElementById('drop-zone').style.display = 'block';
@@ -3514,6 +3604,8 @@ MANDATORY FORMAT:
             line-height: 1.5;
             word-wrap: break-word;
             overflow-x: auto;
+            overflow-y: hidden;
+            flex-shrink: 0;
         }
 
         .ai-message {
@@ -3840,8 +3932,7 @@ MANDATORY FORMAT:
             html = html.replace(/\n/g, '<br>');
             html = html.replace(/(<\/h[2-6]>|<\/div>)<br>/gi, '$1');
             
-            // Xử lý nút trích dẫn Đi tới [Đoạn X]
-            html = html.replace(/\[Đoạn (\d+)\]/gi, '<button onclick="scrollToBox($1)" class="citation-btn" title="Đi tới đoạn $1"><i class="fa-solid fa-location-crosshairs"></i> Đoạn $1</button>');
+            // (Đã gỡ bỏ tính năng nút trích dẫn [Đoạn X] theo yêu cầu)
             
             return html;
         }
@@ -3851,11 +3942,11 @@ MANDATORY FORMAT:
             if (box) {
                 box.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 const originalBoxShadow = box.style.boxShadow;
-                box.style.transition = 'box-shadow 0.3s';
+                box.style.transition = 'box-shadow 0.2s';
                 box.style.boxShadow = '0 0 0 4px var(--secondary)';
                 setTimeout(() => {
                     box.style.boxShadow = originalBoxShadow;
-                }, 2500);
+                }, 500);
             }
         }
 
@@ -3867,7 +3958,7 @@ MANDATORY FORMAT:
             input.value = '';
 
             const pinnedText = getPinnedTextForChat();
-            const fullContext = bilingualResults.map((r, i) => `[Đoạn ${i}]\nBản gốc: ${r.source}\nBản dịch: ${r.target}`).join('\n\n');
+            const fullContext = bilingualResults.map(r => r.source + '\n' + r.target).join('\n\n');
 
             appendChatMessage('user', text);
             const loadingMsg = appendChatMessage('ai', '<i class="fa-solid fa-spinner fa-spin"></i> Đang suy nghĩ...', true);
@@ -3882,7 +3973,7 @@ MANDATORY FORMAT:
                 const apiKey = keyList[window.currentApiKeyIndex % keyList.length];
                 window.currentApiKeyIndex++;
 
-                let systemInstruction = "Bạn là trợ lý AI thông minh hỗ trợ phân tích tài liệu dịch thuật. Dưới đây là toàn bộ tài liệu được đánh số theo từng [Đoạn X]. Khi bạn trích dẫn hoặc nhắc đến một thông tin cụ thể từ tài liệu, BẮT BUỘC phải đính kèm [Đoạn X] (ví dụ: [Đoạn 15], [Đoạn 2]) vào cuối câu để người dùng biết bạn lấy từ đâu. Hãy trả lời bằng tiếng Việt.";
+                let systemInstruction = "Bạn là trợ lý AI thông minh hỗ trợ phân tích tài liệu dịch thuật. Bạn phải trả lời bằng tiếng Việt. Dưới đây là toàn bộ tài liệu song ngữ (Gốc + Dịch). Hãy dùng nó làm ngữ cảnh để trả lời câu hỏi của người dùng.";
                 let prompt = `NỘI DUNG TÀI LIỆU:\n${fullContext.substring(0, 80000)}\n\n`;
                 if (pinnedText) {
                     prompt += `NGƯỜI DÙNG ĐANG HỎI CỤ THỂ VỀ ĐOẠN NÀY TRONG TÀI LIỆU:\n"${pinnedText}"\n\n`;
