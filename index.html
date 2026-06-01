@@ -568,8 +568,9 @@
         }
 
         /* Hỗ trợ copy công thức MathJax dễ dàng hơn */
-        mjx-container {
-            user-select: all !important;
+        mjx-container, mjx-container * {
+            user-select: text !important;
+            -webkit-user-select: text !important;
             cursor: text !important;
         }
 
